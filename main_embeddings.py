@@ -33,54 +33,19 @@ Examples:
 
 import argparse
 import logging
-import subprocess
 import sys
 from pathlib import Path
+
+# Add the 'code' directory to Python path so we can import modules
+CODE_DIR = Path(__file__).parent / 'code'
+if str(CODE_DIR) not in sys.path:
+    sys.path.insert(0, str(CODE_DIR))
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-def run_step(script: str, description: str, args_list: list = None) -> bool:
-    """Run a Python script as subprocess."""
-    logger.info(f"\n{'='*60}")
-    logger.info(f"Step: {description}")
-    logger.info(f"{'='*60}")
-
-    cmd = [sys.executable, script]
-    if args_list:
-        cmd.extend(args_list)
-
-    logger.info(f"Running: {' '.join(cmd)}")
-
-    try:
-        # Stream output live
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-
-        # Print stdout/stderr as they come
-        if result.stdout:
-            logger.info(result.stdout)
-        if result.stderr:
-            logger.warning(result.stderr)
-
-        if result.returncode != 0:
-            logger.error(f"❌ {description} FAILED with exit code {result.returncode}")
-            return False
-        else:
-            logger.info(f"✅ {description} COMPLETED")
-            return True
-
-    except Exception as e:
-        logger.error(f"❌ {description} FAILED with exception: {e}")
-        return False
 
 def check_prerequisites() -> bool:
     """Check that required files exist."""
@@ -95,9 +60,89 @@ def check_prerequisites() -> bool:
     logger.info("✅ All prerequisites found")
     return True
 
+def run_classification(force: bool = False) -> bool:
+    """Run policy classification by directly calling the module."""
+    try:
+        import classify_policies
+        output_path = Path('data/policy_categories.csv')
+
+        # If not forcing and output exists, skip
+        if not force and output_path.exists():
+            logger.info(f"⏭️  Skipping classification - output already exists: {output_path}")
+            return True
+
+        logger.info(">>> Running policy classification...")
+        # Call the process_csv function directly
+        classify_policies.process_csv(
+            input_path='data/FAOLEX_Food.csv',
+            output_path='data/policy_categories.csv'
+        )
+        logger.info("✅ Policy classification completed")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Policy classification failed: {e}", exc_info=True)
+        return False
+
+def run_embeddings(limit: int = None, model: str = 'all-minilm', force: bool = False, batch_size: int = 10) -> bool:
+    """Generate embeddings by directly calling the module's main with modified sys.argv."""
+    try:
+        import generate_embeddings
+
+        # Build argument list
+        argv = ['generate_embeddings.py']
+        if limit:
+            argv.extend(['--limit', str(limit)])
+        if model:
+            argv.extend(['--model', model])
+        if force:
+            argv.append('--force')
+        argv.extend(['--batch-size', str(batch_size)])
+
+        # Temporarily replace sys.argv
+        old_argv = sys.argv
+        sys.argv = argv
+
+        try:
+            # Call the main function directly
+            generate_embeddings.main()
+            logger.info("✅ Embedding generation completed")
+            return True
+        finally:
+            # Restore sys.argv
+            sys.argv = old_argv
+    except Exception as e:
+        logger.error(f"❌ Embedding generation failed: {e}", exc_info=True)
+        return False
+
+def run_similarities(model: str = 'all-minilm', force: bool = False) -> bool:
+    """Compute strategy similarities by directly calling the module's main with modified sys.argv."""
+    try:
+        import compute_similarities
+
+        # Build argument list
+        argv = ['compute_similarities.py', '--model', model]
+        if force:
+            argv.append('--force')
+
+        # Temporarily replace sys.argv
+        old_argv = sys.argv
+        sys.argv = argv
+
+        try:
+            # Call the main function directly
+            compute_similarities.main()
+            logger.info("✅ Similarity computation completed")
+            return True
+        finally:
+            # Restore sys.argv
+            sys.argv = old_argv
+    except Exception as e:
+        logger.error(f"❌ Similarity computation failed: {e}", exc_info=True)
+        return False
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Embeddings-only pipeline: classify, embed, compute similarities"
+        description="Embeddings-only pipeline: classify, embed, compute similarities (no subprocess calls)"
     )
     parser.add_argument(
         '--limit',
@@ -131,15 +176,22 @@ def main():
         action='store_true',
         help='Skip similarity computation (use existing similarities)'
     )
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=10,
+        help='Batch size for chunk embedding (default: 10)'
+    )
 
     args = parser.parse_args()
 
     logger.info("=" * 70)
-    logger.info("EMBEDDINGS-ONLY PIPELINE")
+    logger.info("EMBEDDINGS-ONLY PIPELINE (Direct Imports - No Subprocess)")
     logger.info("=" * 70)
     logger.info(f"Model: {args.model}")
     logger.info(f"Limit: {args.limit or 'ALL'}")
     logger.info(f"Force: {args.force}")
+    logger.info(f"Batch size: {args.batch_size}")
 
     # Check prerequisites
     if not check_prerequisites():
@@ -149,10 +201,7 @@ def main():
     # STEP 1: Classification
     # =====================
     if not args.skip_classification:
-        if not run_step(
-            'code/classify_policies.py',
-            'Policy Classification (demand/supply)'
-        ):
+        if not run_classification(force=args.force):
             return 1
     else:
         logger.info("⏭️  Skipping classification (using existing policy_categories.csv)")
@@ -161,18 +210,11 @@ def main():
     # STEP 2: Embeddings
     # =====================
     if not args.skip_embeddings:
-        embed_args = []
-        if args.limit:
-            embed_args.extend(['--limit', str(args.limit)])
-        if args.model:
-            embed_args.extend(['--model', args.model])
-        if args.force:
-            embed_args.append('--force')
-
-        if not run_step(
-            'code/generate_embeddings.py',
-            f'Embedding Generation ({args.model})',
-            embed_args
+        if not run_embeddings(
+            limit=args.limit,
+            model=args.model,
+            force=args.force,
+            batch_size=args.batch_size
         ):
             return 1
     else:
@@ -182,14 +224,9 @@ def main():
     # STEP 3: Similarities
     # =====================
     if not args.skip_similarities:
-        sim_args = ['--model', args.model]
-        if args.force:
-            sim_args.append('--force')
-
-        if not run_step(
-            'code/compute_similarities.py',
-            'Strategy Similarity Computation',
-            sim_args
+        if not run_similarities(
+            model=args.model,
+            force=args.force
         ):
             return 1
     else:
