@@ -32,6 +32,13 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Storage: `data/embeddings/embeddings.jsonl` + `manifest.json` with full metadata (translation, chunk counts, etc.)
 - Batch embedding: Configurable batch size for efficient Ollama API usage
 
+**Interactive Time-Series World Map**:
+- Generated with Plotly (HTML, self-contained with CDN dependency)
+- Shows three strategy dimensions simultaneously
+- Animated by year with play/pause controls
+- Hover tooltips display country, year, and exact similarity scores
+- Output: `output/interactive_strategy_map.html`
+
 **Test Results** (10 policies):
 - ✅ 10/10 policies successfully embedded
 - Chunks per policy: 1–199 (depending on text length)
@@ -88,7 +95,16 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
     ├── strategy_fs_trends.png
     ├── strategy_fs_trends.pdf
     ├── strategy_nut_trends.png
-    └── strategy_nut_trends.pdf
+    ├── strategy_nut_trends.pdf
+    ├── strategy_sus_map.png
+    ├── strategy_sus_map.pdf
+    ├── strategy_fs_map.png
+    ├── strategy_fs_map.pdf
+    ├── strategy_nut_map.png
+    ├── strategy_nut_map.pdf
+    ├── world_similarity_map.png
+    ├── world_similarity_map.pdf
+    └── interactive_strategy_map.html  # Animated world map with slider
 ```
 
 ## Setup
@@ -158,13 +174,35 @@ The enhanced R script (`code/world_similarity_map_enhanced.R`) creates:
    - `output/strategy_fs_map.pdf` / `.png` - Food Systems
    - `output/strategy_nut_map.pdf` / `.png` - Nutrition
 
-2. **Time-series data** (for custom animations):
+2. **Combined static world map**:
+   - `output/world_similarity_map.pdf` / `.png` - All three strategies in one figure
+
+3. **Time-series data** (used by the Python interactive map generator):
    - `output/world_map_time_series.csv` - Country-year averaged scores
 
 Run:
 ```bash
 Rscript --vanilla code/world_similarity_map_enhanced.R
 ```
+
+### Interactive Animated World Map (Python)
+Create an interactive HTML map with time-series animation:
+
+```bash
+# Generate the interactive map from time series data
+python3 code/generate_interactive_map.py
+
+# Customize input/output paths
+python3 code/generate_interactive_map.py --input data/custom_timeseries.csv --output output/custom_map.html
+```
+
+The resulting HTML file (`output/interactive_strategy_map.html`) includes:
+- Three choropleth maps (Environmental Sustainability, Food Systems, Nutrition)
+- Slider to select year (1965-1994) with Play/Pause button
+- Hover tooltips showing country name, year, strategy dimension, and similarity score
+- Fully self-contained (loads Plotly from CDN)
+
+Open the HTML file in any modern web browser to interact.
 
 ### Descriptive Statistics (Python → LaTeX)
 Generate LaTeX tables with summary statistics and top/bottom policy rankings:

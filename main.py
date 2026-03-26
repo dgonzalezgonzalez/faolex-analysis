@@ -256,6 +256,15 @@ def main():
                 logger.error("❌ Analysis: world map generation failed")
         else:
             logger.warning("⚠️  Rscript not found, skipping world map generation")
+
+        # 4c: Generate interactive HTML time-series map
+        if run_command(
+            [sys.executable, 'code/generate_interactive_map.py'],
+            description="Generate interactive animated HTML world map"
+        ):
+            logger.info("✅ Interactive HTML map generated")
+        else:
+            logger.error("❌ Analysis: interactive map generation failed")
     else:
         logger.info("\n>>> Step 4: Analysis & Visualization [SKIPPED] (outputs exist) <<<")
 
@@ -271,10 +280,12 @@ def main():
     logger.info(f"  • Descriptives LaTeX: {output_dir / 'descriptive_statistics.tex'}")
     logger.info(f"  • Time trends: {output_dir / 'strategy_*_trends.*'}")
     logger.info(f"  • World maps: {output_dir / 'world_similarity_map.*'}")
+    logger.info(f"  • Interactive map: {output_dir / 'interactive_strategy_map.html'}")
     logger.info("\nTo view results:")
     logger.info(f"  pd {'data/strategy_similarities.csv'}")
     logger.info(f"  cat {'output/descriptive_statistics.tex'}")
     logger.info(f"  open {'output/strategy_*_trends.pdf'}")
+    logger.info(f"  open {'output/interactive_strategy_map.html'} (in browser)")
     logger.info("=" * 60)
 
     return 0

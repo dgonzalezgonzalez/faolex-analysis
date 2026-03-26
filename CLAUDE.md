@@ -98,20 +98,39 @@ The `code/compute_similarities.py` script computes cosine similarity between pol
 python3 code/compute_similarities.py
 ```
 
-### 4. Visualization & Analysis
+### 4. Interactive Time-Series World Map
 
-The project includes multiple analysis outputs:
+The `code/generate_interactive_map.py` script creates an animated HTML world map from the time series data.
+
+**Features**:
+- Three choropleth maps (one for each strategy dimension)
+- Animated time slider (1965-1994) with play/pause controls
+- Interactive hover tooltips showing country, year, and similarity scores
+- Responsive design with Plotly (uses CDN, no local dependencies)
+
+**Output**: `output/interactive_strategy_map.html` (single file with all three strategies)
+
+**Usage**:
+```bash
+python3 code/generate_interactive_map.py
+# Optional: --input path/to/time_series.csv  --output path/to/output.html
+```
+
+**Note**: The time series CSV (`output/world_map_time_series.csv`) is the intermediate data used to generate the HTML. After generating the interactive map, the CSV can be removed.
+
+### 5. Visualization & Analysis (Stata, R, Python)
+
+The project includes additional analysis outputs:
 
 **Stata**:
 - Time-trend line graphs: `code/strategy_similarity_trends.do` → `output/strategy_*_trends.pdf/png`
 - Descriptive LaTeX tables: `code/descriptive_tables.do` → `output/descriptive_statistics.tex`
 
 **R**:
-- World maps by country: `code/world_similarity_map_enhanced.R` → `output/strategy_*_map.pdf/png`
-- Time-series data: `output/world_map_time_series.csv` (for custom animations)
+- Static world maps by country: `code/world_similarity_map_enhanced.R` → `output/strategy_*_map.pdf/png`
 
 **Python**:
-- Full orchestration: `main.py` (runs everything end-to-end)
+- Full orchestration: `main.py` (runs everything end-to-end, now includes interactive map)
 - Embeddings-only: `main_embeddings.py` (classify + embed + similarities only, for external heavy compute)
 
 See README.md for complete usage instructions.
@@ -203,9 +222,10 @@ See README.md for detailed usage options.
 The project now includes:
 - **Strategy similarity analysis**: Comparing policy embeddings to three strategic query dimensions
 - **Stata time-trend visualizations**: Line graphs showing similarity evolution by policy category
-- **R world maps**: Geographic visualization of similarity scores
+- **R world maps**: Geographic visualization of similarity scores (static PDFs)
+- **Interactive HTML world map**: Animated time-series map with Play/Pause slider for all three strategies
 - **LaTeX descriptive tables**: Automated report tables
-- **Master orchestrator**: Single entry point for full pipeline
+- **Master orchestrator**: Single entry point for full pipeline (now generates interactive map)
 
 ## Suggested Workflow
 
