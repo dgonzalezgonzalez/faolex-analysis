@@ -204,3 +204,38 @@ class EmbeddingStorage:
             "pending": pending,
             "embeddings_file_size_mb": self.embeddings_file.stat().st_size / (1024*1024) if self.embeddings_file.exists() else 0
         }
+
+    def get_all_embeddings(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all completed embeddings with their vectors and metadata.
+
+        Returns:
+            List of dicts with keys: record_id, embedding, metadata (from manifest)
+        """
+        embeddings = []
+
+        if not self.embeddings_file.exists():
+            logger.warning("Embeddings file does not exist")
+            return embeddings
+
+        # Read all lines from embeddings.jsonl
+        with open(self.embeddings_file, 'r') as f:
+            for line_num, line in enumerate(f):
+                try:
+                    data = json.loads(line.strip())
+                    record_id = data.get('record_id')
+
+                    # Verify this record is completed in manifest
+                    manifest_record = self.manifest["records"].get(record_id)
+                    if manifest_record and manifest_record.get("status") == "completed":
+                        embeddings.append({
+                            'record_id': record_id,
+                            'embedding': data.get('embedding', []),
+                            'metadata': data.get('metadata', {})
+                        })
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse line {line_num}: {e}")
+                    continue
+
+        logger.info(f"Retrieved {len(embeddings)} completed embeddings")
+        return embeddings
