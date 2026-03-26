@@ -7,12 +7,14 @@ Downloads text, extracts content, generates embeddings with Ollama.
 import argparse
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 import pandas as pd
 from tqdm import tqdm
 
 from text_downloader import TextDownloader
 from text_extractor import TextExtractor
+from text_translator import TextTranslator
+from text_chunker import TextChunker
 from embedding_client import EmbeddingClient
 from embedding_storage import EmbeddingStorage
 
@@ -61,12 +63,15 @@ def process_policy(
     category: str,
     downloader: TextDownloader,
     extractor: TextExtractor,
+    translator: TextTranslator,
+    chunker: TextChunker,
     embed_client: EmbeddingClient,
     storage: EmbeddingStorage,
     force_redownload: bool = False
 ) -> bool:
     """
-    Process a single policy through the full pipeline.
+    Process a single policy through the full pipeline:
+    download -> extract -> translate -> chunk -> embed (average) -> store
 
     Returns:
         True if successful, False otherwise
@@ -82,8 +87,8 @@ def process_policy(
         cache_path, was_downloaded = downloader.download(record_id, text_url, force=force_redownload)
         text_source = cache_path.suffix.lstrip('.')
 
-        # 2. Extract text (truncate to fit embedding model context - 8000 chars ~ 2000 tokens)
-        text = extractor.extract_text(cache_path, max_length=8000)
+        # 2. Extract text (use higher limit; we'll chunk later)
+        text = extractor.extract_text(cache_path, max_length=100000)
 
         # Validate text quality
         if not extractor.validate_text(text):
@@ -95,47 +100,82 @@ def process_policy(
             })
             return False
 
-        # 3. Generate embedding
-        embedding = embed_client.generate_embedding(text)
+        # 3. Translate to English if needed
+        is_english = translator.is_english(text)
+        original_language = language  # from CSV metadata
+        if is_english:
+            translated_text = text
+            was_translated = False
+        else:
+            translated_text = translator.translate(text)
+            was_translated = True
+            if translated_text == text:
+                logger.warning(f"Translation may have failed for {record_id}, using original text")
+
+        # 4. Chunk text into manageable pieces
+        chunks = chunker.chunk_text(translated_text)
+        if not chunks:
+            error_msg = f"No chunks produced for {record_id}"
+            logger.error(error_msg)
+            storage.mark_failed(record_id, error=error_msg, metadata={
+                "title": title, "language": language, "country": country,
+                "category": category, "text_source": text_source, "text_length": len(translated_text)
+            })
+            return False
+
+        logger.info(f"Generated {len(chunks)} chunks for {record_id}")
+
+        # 5. Generate embedding by averaging chunk embeddings
+        embedding = embed_client.generate_embedding_from_chunks(chunks)
         if embedding is None:
             error_msg = f"Embedding generation failed for {record_id}"
             logger.error(error_msg)
             storage.mark_failed(record_id, error=error_msg, metadata={
                 "title": title, "language": language, "country": country,
-                "category": category, "text_source": text_source, "text_length": len(text)
+                "category": category, "text_source": text_source,
+                "text_length": len(translated_text), "chunk_count": len(chunks)
             })
             return False
 
-        # 4. Store embedding
+        # 6. Store embedding
         embedding_index = storage.append_embedding(
             record_id=record_id,
-            text=text,
+            text=translated_text[:5000],  # Store truncated translated text
             embedding=embedding,
             metadata={
                 "title": title,
                 "language": language,
+                "original_language": original_language,
                 "country": country,
                 "category": category,
-                "text_source": text_source
+                "text_source": text_source,
+                "was_translated": was_translated,
+                "chunk_count": len(chunks),
+                "original_text_length": len(text),
+                "processed_text_length": len(translated_text)
             }
         )
 
-        # 5. Update manifest
+        # 7. Update manifest
         embedding_dim = len(embedding)
         storage.finalize_embedding(
             record_id=record_id,
-            text_length=len(text),
+            text_length=len(translated_text),
             embedding_dim=embedding_dim,
             metadata={
                 "title": title,
                 "language": language,
+                "original_language": original_language,
                 "country": country,
                 "category": category,
-                "text_source": text_source
+                "text_source": text_source,
+                "was_translated": was_translated,
+                "chunk_count": len(chunks),
+                "original_text_length": len(text)
             }
         )
 
-        logger.info(f"Successfully processed {record_id} (embedding dim={embedding_dim}, index={embedding_index})")
+        logger.info(f"Successfully processed {record_id} (dim={embedding_dim}, index={embedding_index}, chunks={len(chunks)})")
         return True
 
     except Exception as e:
@@ -205,6 +245,8 @@ def main():
     # Initialize components
     downloader = TextDownloader()
     extractor = TextExtractor()
+    translator = TextTranslator()
+    chunker = TextChunker(chunk_size=2000, overlap=200)
     embed_client = EmbeddingClient()
     storage = EmbeddingStorage()
 
@@ -232,6 +274,8 @@ def main():
             category=category,
             downloader=downloader,
             extractor=extractor,
+            translator=translator,
+            chunker=chunker,
             embed_client=embed_client,
             storage=storage,
             force_redownload=args.force

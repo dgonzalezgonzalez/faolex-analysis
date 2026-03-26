@@ -39,35 +39,47 @@ A rule-based classification script (`code/classify_policies.py`) to categorize e
 **Output**: `data/policy_categories.csv`
 - 40,255 policies classified: 67.2% supply-side, 20.8% demand-side, 12.0% unclear
 
-### 2. Vector Embedding Pipeline (In Progress)
+### 2. Vector Embedding Pipeline (Enhanced)
 
-A modular system to download policy texts, extract clean content, and generate vector embeddings using Ollama's `nomic-embed-text` model.
+A modular system to download policy texts, translate to English, chunk, and generate vector embeddings using Ollama's `nomic-embed-text` model.
 
 **Components**:
 - `code/text_downloader.py` - Downloads and caches `.txt` or `.pdf` files from FAOLEX URLs
-- `code/text_extractor.py` - Extracts text with validation and truncation
-- `code/embedding_client.py` - Interface with Ollama embedding API (768-dimensional vectors)
-- `code/embedding_storage.py` - Stores embeddings in JSON Lines format with manifest tracking
+- `code/text_extractor.py` - Extracts text with validation (up to 100k chars)
+- `code/text_translator.py` - Detects language and translates non-English to English (Google Translate, cached)
+- `code/text_chunker.py` - Splits long texts into overlapping chunks (2000 chars, 200 overlap)
+- `code/embedding_client.py` - Ollama API wrapper; supports averaging chunk embeddings
+- `code/embedding_storage.py` - JSON Lines storage + manifest with detailed metadata
 - `code/generate_embeddings.py` - Main orchestrator with resume capability
 
 **Storage**:
 - `data/text_cache/` - Raw downloaded files (cached, not committed)
-- `data/embeddings/embeddings.jsonl` - Embeddings and metadata
-- `data/embeddings/manifest.json` - Processing status for each Record ID
+- `data/embeddings/embeddings.jsonl` - Embeddings, metadata, and truncated processed text
+- `data/embeddings/manifest.json` - Status per policy with translation info, chunk counts, errors
+
+**Enhanced Features**:
+- Translation: Non-English → English automatically (cached)
+- Chunking + averaging: Handles arbitrary-length documents
+- Detailed manifest: `was_translated`, `original_language`, `chunk_count`, `original_text_length`, `processed_text_length`
 
 **Test Results** (10 policies):
-- 5 successful embeddings generated
-- 5 failed due to embedding model context length limits (need improved text chunking/truncation strategy)
+- ✅ 10/10 completed, 0 failures
+- Chunks per policy: 1–20 (avg ~6.5)
+- Processing time: ~21 sec/policy (on current setup)
+- Embedding dimension: 768
 
 **Usage**:
 ```bash
 # Test with 10 policies
 python3 code/generate_embeddings.py --limit 10
 
-# Check processing status
+# Check status
 python3 code/generate_embeddings.py --status
 
-# Force re-run on failures
+# Run full dataset (may take many hours; see optimization notes below)
+python3 code/generate_embeddings.py
+
+# Force re-processing
 python3 code/generate_embeddings.py --force --limit 10
 ```
 
@@ -92,6 +104,13 @@ Current dependencies (in `requirements.txt`):
 - numpy==2.4.3
 - python-dateutil==2.9.0.post0
 - six==1.17.0
+- ollama==0.6.1
+- requests==2.33.0
+- PyPDF2==3.0.1
+- tqdm==4.67.3
+- beautifulsoup4==4.14.3
+- deep-translator==1.11.4
+- langdetect==1.0.9
 
 ## Running Code
 

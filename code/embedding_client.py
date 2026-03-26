@@ -99,6 +99,46 @@ class EmbeddingClient:
 
         return embeddings
 
+    def generate_embedding_from_chunks(self, chunks: List[str]) -> Optional[List[float]]:
+        """
+        Generate embedding by averaging embeddings from multiple chunks.
+
+        Args:
+            chunks: List of text chunks
+
+        Returns:
+            Averaged embedding vector, or None if all chunks fail
+        """
+        if not chunks:
+            logger.warning("No chunks provided for embedding")
+            return None
+
+        embeddings = []
+        for chunk in tqdm(chunks, desc="Embedding chunks", leave=False):
+            emb = self.generate_embedding(chunk)
+            if emb:
+                embeddings.append(emb)
+
+        if not embeddings:
+            logger.error("All chunks failed to generate embeddings")
+            return None
+
+        # Average embeddings element-wise
+        if len(embeddings) == 1:
+            return embeddings[0]
+
+        # Sum all embeddings
+        dim = len(embeddings[0])
+        summed = [0.0] * dim
+        for emb in embeddings:
+            for i, val in enumerate(emb):
+                summed[i] += val
+
+        # Divide by count
+        averaged = [val / len(embeddings) for val in summed]
+        logger.info(f"Averaged {len(embeddings)} chunk embeddings into final vector")
+        return averaged
+
     def get_embedding_dimension(self) -> int:
         """Get the dimension of embeddings from the model."""
         # nomic-embed-text produces 768-dimensional embeddings

@@ -20,12 +20,13 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Demand-side policies: 8,369 (20.8%)
 - Unclear/ambiguous: 4,837 (12.0%)
 
-**Embedding Pipeline Test** (10 policies):
-- Successfully generated embeddings: 5
-- Failed due to context length: 5
-- Storage: `data/embeddings/embeddings.jsonl` (JSON Lines) with manifest tracking in `data/embeddings/manifest.json`
-- Text cache: `data/text_cache/` (caches downloaded .txt and .pdf files)
-- The pipeline demonstrates full functionality: downloading, text extraction, embedding, and storage with resume capability
+**Enhanced Embedding Pipeline Test** (10 policies):
+- ✅ All 10 policies successfully processed
+- 🌐 Translation: Non-English texts automatically translated to English using Google Translate (cached)
+- 🔪 Chunking: Long texts split into overlapping chunks (2000 chars, 200 overlap) and embeddings averaged
+- 📦 Storage: `data/embeddings/embeddings.jsonl` (179 KB) + `manifest.json` with full metadata
+- ⏱️  Average processing time: ~21 sec/policy (6.5 chunks each)
+- The pipeline is ready for full dataset scaling (potentially optimize with batching for 40K policies)
 
 ## Repository Structure
 
@@ -111,7 +112,3 @@ Source: [FAOLEX - Food and Agriculture Organization of the United Nations](http:
 ## Contributing
 
 This is a research/analysis project. For questions or suggestions, please open an issue.
-
-## License
-
-[To be added]

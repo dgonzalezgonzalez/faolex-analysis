@@ -1,172 +1,207 @@
 {
   "version": "1.0",
-  "created": "2026-03-26T16:56:48.905710",
+  "created": "2026-03-26T17:17:26.394088",
   "records": {
     "LEX-FAOC001069": {
-      "status": "failed",
-      "last_updated": "2026-03-26T16:56:52.489145",
-      "text_source": null,
-      "text_length": null,
-      "embedding_dim": null,
-      "embedding_index": null,
-      "metadata": {
-        "title": "Sub-Law No. 66 OR.NOR.KROR. on transportation of fishery product.",
-        "language": "English",
-        "country": "Cambodia",
-        "category": "supply_side",
-        "text_source": "txt",
-        "text_length": 8000
-      },
-      "error": "Embedding generation failed for LEX-FAOC001069"
-    },
-    "LEX-FAOC001401": {
-      "status": "failed",
-      "last_updated": "2026-03-26T16:56:55.619347",
-      "text_source": null,
-      "text_length": null,
-      "embedding_dim": null,
-      "embedding_index": null,
-      "metadata": {
-        "title": "D\u00e9cret n\u00ba 81-62 portant r\u00e9glementation de l'inspection sanitaire et du contr\u00f4le de salubrit\u00e9 des produits de la p\u00eache destin\u00e9s \u00e0 l'alimentation humaine.",
-        "language": "French",
-        "country": "Mauritania",
-        "category": "supply_side",
-        "text_source": "txt",
-        "text_length": 8000
-      },
-      "error": "Embedding generation failed for LEX-FAOC001401"
-    },
-    "LEX-FAOC001406": {
       "status": "completed",
-      "last_updated": "2026-03-26T16:56:58.585634",
+      "last_updated": "2026-03-26T17:17:44.853165",
       "text_source": "txt",
-      "text_length": 2560,
+      "text_length": 8163,
       "embedding_dim": 768,
       "embedding_index": 0,
       "metadata": {
-        "title": "D\u00e9cret n\u00ba 94-030 relatif aux normes d'hygi\u00e8ne et de salubrit\u00e9 et aux conditions d'inspection sanitaire et de contr\u00f4le r\u00e9gissant la production et la mise sur le march\u00e9 des produits de la p\u00eache.",
+        "title": "Sub-Law No. 66 OR.NOR.KROR. on transportation of fishery product.",
+        "language": "English",
+        "original_language": "English",
+        "country": "Cambodia",
+        "category": "supply_side",
+        "text_source": "txt",
+        "was_translated": false,
+        "chunk_count": 5,
+        "original_text_length": 8163
+      },
+      "error": null
+    },
+    "LEX-FAOC001401": {
+      "status": "completed",
+      "last_updated": "2026-03-26T17:17:54.317035",
+      "text_source": "txt",
+      "text_length": 8243,
+      "embedding_dim": 768,
+      "embedding_index": 1,
+      "metadata": {
+        "title": "D\u00e9cret n\u00ba 81-62 portant r\u00e9glementation de l'inspection sanitaire et du contr\u00f4le de salubrit\u00e9 des produits de la p\u00eache destin\u00e9s \u00e0 l'alimentation humaine.",
         "language": "French",
+        "original_language": "French",
         "country": "Mauritania",
         "category": "supply_side",
-        "text_source": "txt"
+        "text_source": "txt",
+        "was_translated": true,
+        "chunk_count": 5,
+        "original_text_length": 8243
+      },
+      "error": null
+    },
+    "LEX-FAOC001406": {
+      "status": "completed",
+      "last_updated": "2026-03-26T17:17:56.939481",
+      "text_source": "txt",
+      "text_length": 2272,
+      "embedding_dim": 768,
+      "embedding_index": 2,
+      "metadata": {
+        "title": "D\u00e9cret n\u00ba 94-030 relatif aux normes d'hygi\u00e8ne et de salubrit\u00e9 et aux conditions d'inspection sanitaire et de contr\u00f4le r\u00e9gissant la production et la mise sur le march\u00e9 des produits de la p\u00eache.",
+        "language": "French",
+        "original_language": "French",
+        "country": "Mauritania",
+        "category": "supply_side",
+        "text_source": "txt",
+        "was_translated": true,
+        "chunk_count": 2,
+        "original_text_length": 2560
       },
       "error": null
     },
     "LEX-FAOC001418": {
       "status": "completed",
-      "last_updated": "2026-03-26T16:57:08.606608",
+      "last_updated": "2026-03-26T17:18:19.202923",
       "text_source": "txt",
-      "text_length": 8000,
+      "text_length": 27667,
       "embedding_dim": 768,
-      "embedding_index": 1,
+      "embedding_index": 3,
       "metadata": {
         "title": "Orden de 15 de octubre de 1985 - Norma de calidad para el mejill\u00f3n, almeja y berberecho en conserva.",
         "language": "Spanish",
+        "original_language": "Spanish",
         "country": "Spain",
         "category": "unclear",
-        "text_source": "txt"
+        "text_source": "txt",
+        "was_translated": false,
+        "chunk_count": 17,
+        "original_text_length": 27667
       },
       "error": null
     },
     "LEX-FAOC001419": {
       "status": "completed",
-      "last_updated": "2026-03-26T16:57:13.030156",
+      "last_updated": "2026-03-26T17:18:22.312448",
       "text_source": "txt",
-      "text_length": 2976,
+      "text_length": 2826,
       "embedding_dim": 768,
-      "embedding_index": 2,
+      "embedding_index": 4,
       "metadata": {
         "title": "Arr\u00eat\u00e9 n\u00ba R-581 du 5 septembre 1969 fixant les conditions d'installation et d'exploitation des industries du conditionnement et de la commercialisation de la poutargue.",
         "language": "French",
+        "original_language": "French",
         "country": "Mauritania",
         "category": "supply_side",
-        "text_source": "txt"
+        "text_source": "txt",
+        "was_translated": true,
+        "chunk_count": 2,
+        "original_text_length": 2976
       },
       "error": null
     },
     "LEX-FAOC001428": {
       "status": "completed",
-      "last_updated": "2026-03-26T16:57:15.164203",
+      "last_updated": "2026-03-26T17:18:24.362584",
       "text_source": "txt",
-      "text_length": 1712,
+      "text_length": 1704,
       "embedding_dim": 768,
-      "embedding_index": 3,
+      "embedding_index": 5,
       "metadata": {
         "title": "Arr\u00eat\u00e9 n\u00ba R-032 du 3 mars 1993 portant composition, organisation et fonctionnement d'une commission de concertation en mati\u00e8re de commercialisation des produits halieutiques soumis \u00e0 l'obligation de d\u00e9barquement.",
         "language": "French",
+        "original_language": "French",
         "country": "Mauritania",
         "category": "demand_side",
-        "text_source": "txt"
+        "text_source": "txt",
+        "was_translated": true,
+        "chunk_count": 1,
+        "original_text_length": 1712
       },
       "error": null
     },
     "LEX-FAOC001464": {
       "status": "completed",
-      "last_updated": "2026-03-26T16:57:18.733880",
+      "last_updated": "2026-03-26T17:18:27.352599",
       "text_source": "txt",
-      "text_length": 1922,
+      "text_length": 1653,
       "embedding_dim": 768,
-      "embedding_index": 4,
+      "embedding_index": 6,
       "metadata": {
         "title": "D\u00e9cret n\u00ba 67-16 interdisant la commercialisation en C\u00f4te d'Ivoire de certaines esp\u00e8ces de poissons v\u00e9n\u00e9neux.",
         "language": "French",
+        "original_language": "French",
         "country": "C\u00f4te d'Ivoire",
         "category": "unclear",
-        "text_source": "txt"
+        "text_source": "txt",
+        "was_translated": true,
+        "chunk_count": 1,
+        "original_text_length": 1922
       },
       "error": null
     },
     "LEX-FAOC001623": {
-      "status": "failed",
-      "last_updated": "2026-03-26T16:57:21.882403",
-      "text_source": null,
-      "text_length": null,
-      "embedding_dim": null,
-      "embedding_index": null,
+      "status": "completed",
+      "last_updated": "2026-03-26T17:19:08.051820",
+      "text_source": "txt",
+      "text_length": 14925,
+      "embedding_dim": 768,
+      "embedding_index": 7,
       "metadata": {
         "title": "Decree No. 21/87 approving the constitution of the Corporation for the Marketing of Sea Products (INTERBASE).",
         "language": "Portuguese",
+        "original_language": "Portuguese",
         "country": "Cabo Verde",
         "category": "unclear",
         "text_source": "txt",
-        "text_length": 8000
+        "was_translated": true,
+        "chunk_count": 9,
+        "original_text_length": 14925
       },
-      "error": "Embedding generation failed for LEX-FAOC001623"
+      "error": null
     },
     "LEX-FAOC001746": {
-      "status": "failed",
-      "last_updated": "2026-03-26T16:57:25.012616",
-      "text_source": null,
-      "text_length": null,
-      "embedding_dim": null,
-      "embedding_index": null,
+      "status": "completed",
+      "last_updated": "2026-03-26T17:19:25.927865",
+      "text_source": "txt",
+      "text_length": 4740,
+      "embedding_dim": 768,
+      "embedding_index": 8,
       "metadata": {
         "title": "Arr\u00eat\u00e9 n\u00ba 3746-MAP/EL fixant les d\u00e9tails d'application du d\u00e9cret 62-213 du 18 mai 1962 r\u00e9glementant le contr\u00f4le de la salubrit\u00e9 et des conditions de conservation des produits de la mer d'origine animale destin\u00e9s \u00e0 la consommation.",
         "language": "French",
+        "original_language": "French",
         "country": "Madagascar",
         "category": "supply_side",
         "text_source": "txt",
-        "text_length": 4741
+        "was_translated": true,
+        "chunk_count": 3,
+        "original_text_length": 4741
       },
-      "error": "Embedding generation failed for LEX-FAOC001746"
+      "error": null
     },
     "LEX-FAOC001855": {
-      "status": "failed",
-      "last_updated": "2026-03-26T16:57:28.145631",
-      "text_source": null,
-      "text_length": null,
-      "embedding_dim": null,
-      "embedding_index": null,
+      "status": "completed",
+      "last_updated": "2026-03-26T17:20:58.082963",
+      "text_source": "txt",
+      "text_length": 34649,
+      "embedding_dim": 768,
+      "embedding_index": 9,
       "metadata": {
         "title": "D\u00e9cret n\u00ba 69-132 relatif au contr\u00f4le des produits de la p\u00eache.",
         "language": "French",
+        "original_language": "French",
         "country": "Senegal",
         "category": "supply_side",
         "text_source": "txt",
-        "text_length": 8000
+        "was_translated": true,
+        "chunk_count": 20,
+        "original_text_length": 34649
       },
-      "error": "Embedding generation failed for LEX-FAOC001855"
+      "error": null
     }
   },
-  "total_embeddings": 5
+  "total_embeddings": 10
 }

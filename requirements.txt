@@ -7,3 +7,5 @@ ollama==0.6.1
 PyPDF2==3.0.1
 requests==2.33.0
 tqdm==4.67.3
+deep-translator==1.11.4
+langdetect==1.0.9
