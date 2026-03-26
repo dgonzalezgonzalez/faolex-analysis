@@ -39,7 +39,7 @@ def main():
     parser.add_argument(
         '--output',
         type=Path,
-        default=Path('output/strategy_similarities.csv'),
+        default=Path('data/strategy_similarities.csv'),
         help='Output CSV file path'
     )
     parser.add_argument(

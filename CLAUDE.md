@@ -92,7 +92,7 @@ The `code/compute_similarities.py` script computes cosine similarity between pol
 - `strategy_fs`: "action embedded in a broader food systems strategy or framework"
 - `strategy_nut`: "action embedded in a national nutrition or public health nutrition strategy"
 
-**Output**: `output/strategy_similarities.csv`
+**Output**: `data/strategy_similarities.csv`
 - Columns: `record_id`, `strategy_sus`, `strategy_fs`, `strategy_nut`
 - Similarity scores range from -1 to 1 (higher = more semantically similar)
 
@@ -105,7 +105,7 @@ python3 code/compute_similarities.py
 python3 code/compute_similarities.py --model nomic-embed-text
 
 # Custom output path
-python3 code/compute_similarities.py --output output/my_similarities.csv
+python3 code/compute_similarities.py --output data/custom_similarities.csv
 ```
 
 **Results Interpretation**:
