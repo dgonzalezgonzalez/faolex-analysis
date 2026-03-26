@@ -154,25 +154,48 @@ source venv/bin/activate
 python3 code/classify_policies.py
 ```
 
-## Recommended Development Approach
+### Master Pipeline
 
-This project appears to be in the initial stage with only raw data. Suggested next steps for development:
+The recommended way to run the complete analysis is via `main.py`:
 
-1. **Create exploratory analysis scripts** in the `code/` directory to:
-   - Load and clean the data (handle encoding issues, missing values)
-   - Generate summary statistics (countries represented, time span, document types)
-   - Analyze keyword distributions and subject classifications
-   - Explore multilingual content patterns
-   - Create visualizations of temporal trends
+```bash
+python3 main.py --limit 10  # Test run
+python3 main.py            # Full dataset
+```
 
-2. **Generate reports** in the `output/` directory:
-   - HTML/PDF reports from analysis notebooks
-   - Charts and visualizations
-   - Data extracts or aggregated datasets
+See README.md for detailed usage options.
 
-3. **Consider adding**:
-   - Jupyter notebooks for interactive exploration
-   - `.gitignore` to exclude large intermediate files and venv
+## Recent Updates
+
+The project now includes:
+- **Strategy similarity analysis**: Comparing policy embeddings to three strategic query dimensions
+- **Stata time-trend visualizations**: Line graphs showing similarity evolution by policy category
+- **R world maps**: Geographic visualization of similarity scores
+- **LaTeX descriptive tables**: Automated report tables
+- **Master orchestrator**: Single entry point for full pipeline
+
+## Suggested Workflow
+
+1. **Initial test**: `python3 main.py --limit 10` - Verify everything works on small sample
+2. **Check outputs**: Inspect `data/` and `output/` directories
+3. **Full run**: `python3 main.py` - Process all ~40K policies (may take significant time)
+4. **Customize**: Modify strategy queries in `code/compute_similarities.py` or add new analyses
+
+## Notes for Code Generation
+
+- The dataset has a BOM (Byte Order Mark) at the beginning; use appropriate encoding (`utf-8-sig` in Python)
+- Dates are in various formats (DD-MM-YYYY, YYYY, year only) and may require parsing
+- Keywords are semicolon-separated and may need tokenization
+- Some fields have multiple values (Regional organizations, Keywords)
+- The data is primarily focused on food and nutrition legislation but may contain other domains
+
+## Project Conventions
+
+- Keep raw data immutable; derived datasets (embeddings, classifications) are stored alongside in `data/`
+- Document analysis scripts with clear comments explaining methodology
+- Use relative paths from the project root
+- The repository includes README.md for project overview and usage
+- Use `main.py` as the canonical entry point for end-to-end execution
 
 ## Notes for Code Generation
 

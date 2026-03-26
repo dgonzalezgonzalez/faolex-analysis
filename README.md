@@ -150,6 +150,50 @@ Output figures (PNG and PDF) are saved to `output/`:
 - `strategy_fs_trends.*` - Food systems strategy frameworks
 - `strategy_nut_trends.*` - Nutrition/public health nutrition strategies
 
+### World Map Visualization (R)
+The R script (`code/world_similarity_map.R`) creates a multi-panel world map showing average cosine similarity scores by country for the three strategy dimensions.
+```bash
+Rscript --vanilla code/world_similarity_map.R
+```
+Output (PNG and PDF) saved to:
+- `output/world_similarity_map.pdf`
+- `output/world_similarity_map.png`
+
+### Descriptive Statistics (Python → LaTeX)
+Generate LaTeX tables with summary statistics and top/bottom policy rankings:
+```bash
+python3 code/generate_descriptive_tables.py
+```
+Output:
+- `output/descriptive_statistics.tex` (includes sample overview, statistics by category, and extreme cases)
+
+### Master Orchestrator
+Run the entire pipeline end-to-end with `main.py`. This is the single entry point that coordinates all steps with proper error handling and skip flags.
+
+```bash
+# Full pipeline (all 40K+ policies)
+python3 main.py
+
+# Test run (limited sample)
+python3 main.py --limit 10
+
+# Use different embedding model
+python3 main.py --model nomic-embed-text
+
+# Skip already-completed steps
+python3 main.py --skip-embeddings --skip-similarities
+
+# Force re-run from scratch
+python3 main.py --force --limit 10
+```
+
+The orchestrator:
+- Checks for existing outputs to avoid redundant work
+- Runs steps in correct order: classify → embed → similarities → analysis
+- Provides clear logging and status updates
+- Generates all outputs in `data/` and `output/`
+
+
 ## Next Steps
 
 Future analysis will explore:
