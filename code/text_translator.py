@@ -70,6 +70,26 @@ class TextTranslator:
             logger.warning(f"Language detection failed: {e}, assuming English")
             return True
 
+    def should_translate(self, csv_language: str) -> bool:
+        """
+        Determine if translation is needed based on CSV language field.
+
+        Args:
+            csv_language: Language value from Language of document column
+
+        Returns:
+            True if translation needed, False if English
+        """
+        if not csv_language:
+            # Fallback to auto-detect
+            return None  # Signal to auto-detect
+
+        # Normalize language string
+        lang = str(csv_language).strip().lower()
+        # Check if it's English (common variations)
+        english_indicators = ['english', 'en', 'eng', 'anglais', 'ingles']
+        return not any(indicator in lang for indicator in english_indicators)
+
     def translate(self, text: str, force: bool = False) -> str:
         """
         Translate text to English if not already English.

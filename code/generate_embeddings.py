@@ -67,6 +67,7 @@ def process_policy(
     chunker: TextChunker,
     embed_client: EmbeddingClient,
     storage: EmbeddingStorage,
+    batch_size: int = 10,
     force_redownload: bool = False
 ) -> bool:
     """
@@ -101,16 +102,40 @@ def process_policy(
             return False
 
         # 3. Translate to English if needed
-        is_english = translator.is_english(text)
+        # Use CSV language field to decide if translation is required (forced)
+        needs_translation = translator.should_translate(language)
         original_language = language  # from CSV metadata
-        if is_english:
-            translated_text = text
-            was_translated = False
-        else:
-            translated_text = translator.translate(text)
+
+        if needs_translation is False:
+            # CSV indicates it's English, but still verify and maybe translate if detection says otherwise
+            if translator.is_english(text):
+                translated_text = text
+                was_translated = False
+            else:
+                # CSV says English but text is not English - force translation anyway
+                logger.warning(f"{record_id}: CSV indicates English but text not English, translating...")
+                translated_text = translator.translate(text, force=True)
+                was_translated = True
+                original_language = 'unknown (mislabeled)'
+        elif needs_translation is True:
+            # CSV indicates non-English, force translation
+            logger.info(f"{record_id}: Forcing translation from {language}")
+            translated_text = translator.translate(text, force=True)
             was_translated = True
-            if translated_text == text:
-                logger.warning(f"Translation may have failed for {record_id}, using original text")
+        else:
+            # CSV language is missing/empty, auto-detect
+            is_english = translator.is_english(text)
+            if is_english:
+                translated_text = text
+                was_translated = False
+            else:
+                translated_text = translator.translate(text)
+                was_translated = True
+                original_language = 'auto-detected'
+
+        # Check if translation failed
+        if translated_text == text and (needs_translation is True or (needs_translation is False and not translator.is_english(text))):
+            logger.warning(f"Translation may have failed for {record_id}, using original text")
 
         # 4. Chunk text into manageable pieces
         chunks = chunker.chunk_text(translated_text)
@@ -125,8 +150,8 @@ def process_policy(
 
         logger.info(f"Generated {len(chunks)} chunks for {record_id}")
 
-        # 5. Generate embedding by averaging chunk embeddings
-        embedding = embed_client.generate_embedding_from_chunks(chunks)
+        # 5. Generate embedding by averaging chunk embeddings (with batching)
+        embedding = embed_client.generate_embedding_from_chunks(chunks, batch_size=batch_size)
         if embedding is None:
             error_msg = f"Embedding generation failed for {record_id}"
             logger.error(error_msg)
@@ -216,7 +241,14 @@ def main():
         '--batch-size',
         type=int,
         default=10,
-        help='Batch size for progress updates'
+        help='Batch size for chunk embedding'
+    )
+    parser.add_argument(
+        '--model',
+        type=str,
+        default='all-minilm',
+        choices=['nomic-embed-text', 'all-minilm'],
+        help='Embedding model to use (default: all-minilm for speed)'
     )
     parser.add_argument(
         '--status',
@@ -238,6 +270,19 @@ def main():
         print(f"  Embeddings file size: {stats['embeddings_file_size_mb']:.2f} MB")
         return
 
+    # Adjust batch size and chunk size for models with smaller context windows
+    if args.model == 'all-minilm':
+        if args.batch_size > 1:
+            logger.warning(f"all-minilm has a small context window; setting batch_size to 1 to avoid exceeding limits")
+            args.batch_size = 1
+        # all-minilm has a smaller context window (~512 tokens). Legal text has high token density,
+        # so we need to be conservative. Empirical testing shows 300 chars is safe.
+        chunk_size = 300
+        overlap = 30
+    else:
+        chunk_size = 2000
+        overlap = 200
+
     # Load data
     policies = load_policies(args.input, limit=args.limit)
     categories = load_category_map()
@@ -246,11 +291,13 @@ def main():
     downloader = TextDownloader()
     extractor = TextExtractor()
     translator = TextTranslator()
-    chunker = TextChunker(chunk_size=2000, overlap=200)
-    embed_client = EmbeddingClient()
+    chunker = TextChunker(chunk_size=chunk_size, overlap=overlap)
+    embed_client = EmbeddingClient(model=args.model)
     storage = EmbeddingStorage()
 
     logger.info(f"Starting embedding generation for {len(policies)} policies")
+    logger.info(f"Using model: {args.model}")
+    logger.info(f"Chunk batch size: {args.batch_size}")
     logger.info(f"Embedding dimension: {embed_client.get_embedding_dimension()}")
 
     # Process each policy
@@ -278,6 +325,7 @@ def main():
             chunker=chunker,
             embed_client=embed_client,
             storage=storage,
+            batch_size=args.batch_size,
             force_redownload=args.force
         )
 

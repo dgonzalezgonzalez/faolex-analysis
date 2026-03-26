@@ -99,12 +99,14 @@ class EmbeddingClient:
 
         return embeddings
 
-    def generate_embedding_from_chunks(self, chunks: List[str]) -> Optional[List[float]]:
+    def generate_embedding_from_chunks(self, chunks: List[str], batch_size: int = 10) -> Optional[List[float]]:
         """
         Generate embedding by averaging embeddings from multiple chunks.
+        Uses batch embedding for efficiency when dealing with many chunks.
 
         Args:
             chunks: List of text chunks
+            batch_size: Number of chunks to embed in parallel per API call
 
         Returns:
             Averaged embedding vector, or None if all chunks fail
@@ -114,10 +116,13 @@ class EmbeddingClient:
             return None
 
         embeddings = []
-        for chunk in tqdm(chunks, desc="Embedding chunks", leave=False):
-            emb = self.generate_embedding(chunk)
-            if emb:
-                embeddings.append(emb)
+
+        # Process in batches for better performance (Ollama can handle multiple inputs)
+        for i in range(0, len(chunks), batch_size):
+            batch = chunks[i:i+batch_size]
+            batch_embeddings = self._generate_embeddings_batch_ollama(batch)
+            embeddings.extend([emb for emb in batch_embeddings if emb is not None])
+            time.sleep(0.05)  # Small pause between batches
 
         if not embeddings:
             logger.error("All chunks failed to generate embeddings")
@@ -127,17 +132,48 @@ class EmbeddingClient:
         if len(embeddings) == 1:
             return embeddings[0]
 
-        # Sum all embeddings
         dim = len(embeddings[0])
         summed = [0.0] * dim
         for emb in embeddings:
             for i, val in enumerate(emb):
                 summed[i] += val
 
-        # Divide by count
         averaged = [val / len(embeddings) for val in summed]
         logger.info(f"Averaged {len(embeddings)} chunk embeddings into final vector")
         return averaged
+
+    def _generate_embeddings_batch_ollama(self, texts: List[str]) -> List[Optional[List[float]]]:
+        """
+        Send batch request to Ollama embed endpoint.
+
+        Args:
+            texts: List of texts to embed
+
+        Returns:
+            List of embeddings (may contain None for failures)
+        """
+        if not texts:
+            return []
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self.client.embed(model=self.model, input=texts)
+                embeddings = response.get('embeddings', [])
+                if embeddings and len(embeddings) >= len(texts):
+                    return embeddings
+                else:
+                    logger.warning(f"Batch returned {len(embeddings)} embeddings for {len(texts)} inputs")
+                    # Pad with None for missing embeddings
+                    result = embeddings + [None] * (len(texts) - len(embeddings))
+                    return result
+            except Exception as e:
+                logger.warning(f"Batch embed attempt {attempt+1}/{self.max_retries} failed: {e}")
+                if attempt < self.max_retries - 1:
+                    backoff = 2 ** attempt
+                    time.sleep(backoff)
+                else:
+                    logger.error(f"All batch embed attempts failed for {len(texts)} texts")
+                    return [None] * len(texts)
 
     def get_embedding_dimension(self) -> int:
         """Get the dimension of embeddings from the model."""
