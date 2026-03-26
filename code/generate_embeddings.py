@@ -229,8 +229,8 @@ def main():
     parser.add_argument(
         '--limit',
         type=int,
-        default=10,
-        help='Limit number of policies to process (for testing)'
+        default=None,
+        help='Limit number of policies to process (for testing). Default: process all.'
     )
     parser.add_argument(
         '--force',
