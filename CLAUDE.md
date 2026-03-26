@@ -83,6 +83,39 @@ python3 code/generate_embeddings.py
 python3 code/generate_embeddings.py --force --limit 10
 ```
 
+### 3. Strategy Similarity Analysis
+
+The `code/compute_similarities.py` script computes cosine similarity between policy embeddings and predefined strategy query embeddings. This allows ranking policies by their relevance to specific strategic dimensions.
+
+**Strategy Queries**:
+- `strategy_sus`: "action embedded in broader environmentally sustainable strategies"
+- `strategy_fs`: "action embedded in a broader food systems strategy or framework"
+- `strategy_nut`: "action embedded in a national nutrition or public health nutrition strategy"
+
+**Output**: `output/strategy_similarities.csv`
+- Columns: `record_id`, `strategy_sus`, `strategy_fs`, `strategy_nut`
+- Similarity scores range from -1 to 1 (higher = more semantically similar)
+
+**Usage**:
+```bash
+# Ensure embeddings exist first (run generate_embeddings.py)
+python3 code/compute_similarities.py
+
+# Use different embedding model (must match policy embeddings)
+python3 code/compute_similarities.py --model nomic-embed-text
+
+# Custom output path
+python3 code/compute_similarities.py --output output/my_similarities.csv
+```
+
+**Results Interpretation**:
+- Scores near 1: Policy text strongly aligns with the strategy query
+- Scores near 0: No meaningful alignment
+- Negative scores: Semantic opposition or contradiction
+- Top policies can be identified by sorting on each strategy column
+
+**Note**: The embedding model used must match the model used to generate policy embeddings. The default `all-minilm` produces 384-dimensional vectors; `nomic-embed-text` produces 768-dimensional vectors.
+
 ## Environment Setup
 
 A Python virtual environment is included and recommended:
