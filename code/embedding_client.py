@@ -7,6 +7,7 @@ Interface with Ollama for embedding generation.
 import time
 import logging
 from typing import List, Optional
+import numpy as np
 import ollama
 from tqdm import tqdm
 
@@ -130,17 +131,30 @@ class EmbeddingClient:
 
         # Average embeddings element-wise
         if len(embeddings) == 1:
+            # Still normalize single vectors to ensure unit length
+            emb_array = np.array(embeddings[0])
+            norm = np.linalg.norm(emb_array)
+            if norm > 0:
+                return (emb_array / norm).tolist()
             return embeddings[0]
 
+        # Average all embeddings
         dim = len(embeddings[0])
         summed = [0.0] * dim
         for emb in embeddings:
             for i, val in enumerate(emb):
                 summed[i] += val
 
-        averaged = [val / len(embeddings) for val in summed]
-        logger.info(f"Averaged {len(embeddings)} chunk embeddings into final vector")
-        return averaged
+        averaged = np.array([val / len(embeddings) for val in summed])
+
+        # NORMALIZE: The average of unit vectors is not necessarily unit length.
+        # Normalize to ensure cosine similarity works correctly (cosine = dot product of normalized vectors).
+        norm = np.linalg.norm(averaged)
+        if norm > 0:
+            averaged = averaged / norm
+
+        logger.info(f"Averaged {len(embeddings)} chunk embeddings into final vector (normalized)")
+        return averaged.tolist()
 
     def _generate_embeddings_batch_ollama(self, texts: List[str]) -> List[Optional[List[float]]]:
         """
