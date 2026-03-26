@@ -39,34 +39,30 @@ A rule-based classification script (`code/classify_policies.py`) to categorize e
 **Output**: `data/policy_categories.csv`
 - 40,255 policies classified: 67.2% supply-side, 20.8% demand-side, 12.0% unclear
 
-### 2. Vector Embedding Pipeline (Enhanced)
+### 2. Vector Embedding Pipeline (Optimized)
 
-A modular system to download policy texts, translate to English, chunk, and generate vector embeddings using Ollama's `nomic-embed-text` model.
+A modular system to download policy texts, translate to English, chunk, and generate vector embeddings using Ollama's `all-minilm` model (default) or `nomic-embed-text`.
 
 **Components**:
 - `code/text_downloader.py` - Downloads and caches `.txt` or `.pdf` files from FAOLEX URLs
 - `code/text_extractor.py` - Extracts text with validation (up to 100k chars)
 - `code/text_translator.py` - Detects language and translates non-English to English (Google Translate, cached)
-- `code/text_chunker.py` - Splits long texts into overlapping chunks (2000 chars, 200 overlap)
-- `code/embedding_client.py` - Ollama API wrapper; supports averaging chunk embeddings
+- `code/text_chunker.py` - Splits long texts into overlapping chunks (adaptive: 300/30 for all-minilm, 2000/200 for nomic)
+- `code/embedding_client.py` - Ollama API wrapper; batch embedding + normalization
 - `code/embedding_storage.py` - JSON Lines storage + manifest with detailed metadata
 - `code/generate_embeddings.py` - Main orchestrator with resume capability
 
-**Storage**:
-- `data/text_cache/` - Raw downloaded files (cached, not committed)
-- `data/embeddings/embeddings.jsonl` - Embeddings, metadata, and truncated processed text
-- `data/embeddings/manifest.json` - Status per policy with translation info, chunk counts, errors
-
-**Enhanced Features**:
-- Translation: Non-English → English automatically (cached)
-- Chunking + averaging: Handles arbitrary-length documents
-- Detailed manifest: `was_translated`, `original_language`, `chunk_count`, `original_text_length`, `processed_text_length`
+**Key Improvements**:
+- **Adaptive chunk sizing**: Prevents context overflow for smaller models
+- **Normalization**: Final averaged embeddings are unit-normalized for correct cosine similarity
+- **Batch processing**: Configurable batch size for efficiency
+- **Translation logic**: Uses CSV language field + fallback detection
 
 **Test Results** (10 policies):
 - ✅ 10/10 completed, 0 failures
-- Chunks per policy: 1–20 (avg ~6.5)
-- Processing time: ~21 sec/policy (on current setup)
-- Embedding dimension: 768
+- Chunks per policy: 1–199 (depending on text length)
+- Processing time: ~8 sec/policy (all-minilm)
+- Embedding dimension: 384 (all-minilm) or 768 (nomic)
 
 **Usage**:
 ```bash
@@ -76,12 +72,49 @@ python3 code/generate_embeddings.py --limit 10
 # Check status
 python3 code/generate_embeddings.py --status
 
-# Run full dataset (may take many hours; see optimization notes below)
+# Full dataset (may take many hours)
 python3 code/generate_embeddings.py
 
 # Force re-processing
 python3 code/generate_embeddings.py --force --limit 10
+
+# Use different model
+python3 code/generate_embeddings.py --model nomic-embed-text
 ```
+
+### 3. Strategy Similarity Analysis
+
+The `code/compute_similarities.py` script computes cosine similarity between policy embeddings and predefined strategy query embeddings.
+
+**Strategy Queries**:
+- `strategy_sus`: "action embedded in broader environmentally sustainable strategies"
+- `strategy_fs`: "action embedded in a broader food systems strategy or framework"
+- `strategy_nut`: "action embedded in a national nutrition or public health nutrition strategy"
+
+**Output**: `data/strategy_similarities.csv` with columns: `record_id`, `strategy_sus`, `strategy_fs`, `strategy_nut`
+
+**Usage**:
+```bash
+python3 code/compute_similarities.py
+```
+
+### 4. Visualization & Analysis
+
+The project includes multiple analysis outputs:
+
+**Stata**:
+- Time-trend line graphs: `code/strategy_similarity_trends.do` → `output/strategy_*_trends.pdf/png`
+- Descriptive LaTeX tables: `code/descriptive_tables.do` → `output/descriptive_statistics.tex`
+
+**R**:
+- World maps by country: `code/world_similarity_map_enhanced.R` → `output/strategy_*_map.pdf/png`
+- Time-series data: `output/world_map_time_series.csv` (for custom animations)
+
+**Python**:
+- Full orchestration: `main.py` (runs everything end-to-end)
+- Embeddings-only: `main_embeddings.py` (classify + embed + similarities only, for external heavy compute)
+
+See README.md for complete usage instructions.
 
 ### 3. Strategy Similarity Analysis
 

@@ -151,13 +151,20 @@ Output figures (PNG and PDF) are saved to `output/`:
 - `strategy_nut_trends.*` - Nutrition/public health nutrition strategies
 
 ### World Map Visualization (R)
-The R script (`code/world_similarity_map.R`) creates a multi-panel world map showing average cosine similarity scores by country for the three strategy dimensions.
+The enhanced R script (`code/world_similarity_map_enhanced.R`) creates:
+
+1. **Three separate static maps** (one per strategy, no titles):
+   - `output/strategy_sus_map.pdf` / `.png` - Sustainability
+   - `output/strategy_fs_map.pdf` / `.png` - Food Systems
+   - `output/strategy_nut_map.pdf` / `.png` - Nutrition
+
+2. **Time-series data** (for custom animations):
+   - `output/world_map_time_series.csv` - Country-year averaged scores
+
+Run:
 ```bash
-Rscript --vanilla code/world_similarity_map.R
+Rscript --vanilla code/world_similarity_map_enhanced.R
 ```
-Output (PNG and PDF) saved to:
-- `output/world_similarity_map.pdf`
-- `output/world_similarity_map.png`
 
 ### Descriptive Statistics (Python → LaTeX)
 Generate LaTeX tables with summary statistics and top/bottom policy rankings:
@@ -167,31 +174,37 @@ python3 code/generate_descriptive_tables.py
 Output:
 - `output/descriptive_statistics.tex` (includes sample overview, statistics by category, and extreme cases)
 
-### Master Orchestrator
-Run the entire pipeline end-to-end with `main.py`. This is the single entry point that coordinates all steps with proper error handling and skip flags.
+### Master Orchestrator (Full Pipeline)
+Run the entire analysis end-to-end with `main.py`:
 
 ```bash
-# Full pipeline (all 40K+ policies)
-python3 main.py
-
-# Test run (limited sample)
-python3 main.py --limit 10
-
-# Use different embedding model
-python3 main.py --model nomic-embed-text
-
-# Skip already-completed steps
-python3 main.py --skip-embeddings --skip-similarities
-
-# Force re-run from scratch
-python3 main.py --force --limit 10
+python3 main.py --limit 10   # Test run
+python3 main.py              # Full 40K+ dataset
 ```
 
-The orchestrator:
-- Checks for existing outputs to avoid redundant work
-- Runs steps in correct order: classify → embed → similarities → analysis
-- Provides clear logging and status updates
-- Generates all outputs in `data/` and `output/`
+Options: `--model`, `--skip-*`, `--force`. See script for details.
+
+### Embeddings-Only Pipeline (for External Compute)
+For running the heavy embedding computation on a powerful external machine:
+
+```bash
+python3 main_embeddings.py --limit 100   # Test
+python3 main_embeddings.py              # Full dataset
+```
+
+This runs only: classify → embed → similarities. Outputs the core data products (`data/policy_categories.csv`, `data/embeddings/`, `data/strategy_similarities.csv`). After completion, copy the `data/` folder back and run `main.py` (or individual analysis scripts) for visualizations and reports.
+
+### Stata Time-Trends
+```stata
+do code/strategy_similarity_trends.do
+```
+Outputs: `output/strategy_*_trends.pdf/png`
+
+### Stata Descriptive Tables
+```stata
+do code/descriptive_tables.do
+```
+Generates LaTeX tables including sample overview, strategy scores by category, and top/bottom policies: `output/descriptive_statistics.tex`
 
 
 ## Next Steps
