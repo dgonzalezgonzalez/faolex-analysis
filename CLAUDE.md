@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a data analysis project focused on the FAOLEX (Food and Agriculture Organization of the United Nations Legislative database) food legislation dataset. The repository contains:
 
-- **Data**: `data/FAOLEX_Food.csv` - A comprehensive dataset with 40,256 records of food-related legislation from around the world
-- **Code**: `code/` - Directory for analysis scripts and notebooks (currently empty)
-- **Output**: `output/` - Directory for generated analysis results, visualizations, and reports (currently empty)
+- **Data**: `data/FAOLEX_Food.csv` - Raw dataset (40,256 records)
+- **Code**: `code/` - Analysis scripts: policy classification, text downloading, embedding generation
+- **Data products**: `data/policy_categories.csv`, `data/embeddings/`, `data/text_cache/`
+- **Output**: `output/` - Future analysis results, visualizations, and reports
 
 ## Data Structure
 
@@ -27,25 +28,48 @@ The CSV dataset contains 19 columns:
 
 ## Completed Analysis
 
-**Policy Classification**: A rule-based classification script (`code/classify_policies.py`) has been created to categorize each policy as **demand-side** or **supply-side** based on the Abstract, Title, Keywords, and Primary subjects fields.
+### 1. Policy Classification
 
-### Classification Logic
+A rule-based classification script (`code/classify_policies.py`) to categorize each policy as **demand-side** or **supply-side** based on the Abstract, Title, Keywords, and Primary subjects fields.
 
-- **Supply-side policies**: Focus on production, processing, distribution infrastructure, quality standards for producers, farming practices, food safety from production perspective. Keywords include: production, processing, transport, storage, inspection, certification, licensing, hygiene, etc.
-- **Demand-side policies**: Focus on consumers, consumption patterns, nutrition, labeling, advertising, food prices, consumer protection, and retail. Keywords include: consumer, labeling, nutrition, advertising, dietary, food aid, retail, etc.
+**Classification Logic**:
+- **Supply-side**: Production, processing, distribution, quality standards, licensing, inspection, etc.
+- **Demand-side**: Consumers, labeling, nutrition, advertising, food prices, consumer protection, retail.
 
-### Output
+**Output**: `data/policy_categories.csv`
+- 40,255 policies classified: 67.2% supply-side, 20.8% demand-side, 12.0% unclear
 
-The classification results are stored in `data/policy_categories.csv` with two columns:
-- `Record Id`: Policy identifier from original dataset
-- `Category`: `demand_side`, `supply_side`, or `unclear` (if ambiguous)
+### 2. Vector Embedding Pipeline (In Progress)
 
-**Results** (40,255 policies classified):
-- Demand-side: 8,369 (20.8%)
-- Supply-side: 27,049 (67.2%)
-- Unclear/ambiguous: 4,837 (12.0%)
+A modular system to download policy texts, extract clean content, and generate vector embeddings using Ollama's `nomic-embed-text` model.
 
-To re-run the classification: `python3 code/classify_policies.py`
+**Components**:
+- `code/text_downloader.py` - Downloads and caches `.txt` or `.pdf` files from FAOLEX URLs
+- `code/text_extractor.py` - Extracts text with validation and truncation
+- `code/embedding_client.py` - Interface with Ollama embedding API (768-dimensional vectors)
+- `code/embedding_storage.py` - Stores embeddings in JSON Lines format with manifest tracking
+- `code/generate_embeddings.py` - Main orchestrator with resume capability
+
+**Storage**:
+- `data/text_cache/` - Raw downloaded files (cached, not committed)
+- `data/embeddings/embeddings.jsonl` - Embeddings and metadata
+- `data/embeddings/manifest.json` - Processing status for each Record ID
+
+**Test Results** (10 policies):
+- 5 successful embeddings generated
+- 5 failed due to embedding model context length limits (need improved text chunking/truncation strategy)
+
+**Usage**:
+```bash
+# Test with 10 policies
+python3 code/generate_embeddings.py --limit 10
+
+# Check processing status
+python3 code/generate_embeddings.py --status
+
+# Force re-run on failures
+python3 code/generate_embeddings.py --force --limit 10
+```
 
 ## Environment Setup
 

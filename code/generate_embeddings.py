@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""
+Main Pipeline: Generate embeddings for FAOLEX policies.
+Downloads text, extracts content, generates embeddings with Ollama.
+"""
+
+import argparse
+import logging
+from pathlib import Path
+from typing import Dict
+import pandas as pd
+from tqdm import tqdm
+
+from text_downloader import TextDownloader
+from text_extractor import TextExtractor
+from embedding_client import EmbeddingClient
+from embedding_storage import EmbeddingStorage
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def load_policies(csv_path: Path, limit: int = None) -> pd.DataFrame:
+    """
+    Load policies from CSV.
+
+    Args:
+        csv_path: Path to FAOLEX_Food.csv
+        limit: Limit number of records (for testing)
+
+    Returns:
+        DataFrame with policies
+    """
+    logger.info(f"Loading policies from {csv_path}")
+    df = pd.read_csv(csv_path, encoding='utf-8-sig')
+
+    # BOM cleanup: explicitly rename first column to 'Record Id'
+    # The BOM causes the first column name to have weird characters
+    first_col = df.columns[0]
+    if first_col != 'Record Id':
+        df = df.rename(columns={first_col: 'Record Id'})
+
+    # Strip whitespace from all columns
+    df.columns = df.columns.str.strip()
+
+    if limit:
+        df = df.head(limit)
+        logger.info(f"Limited to {len(df)} policies for testing")
+
+    logger.info(f"Loaded {len(df)} policies")
+    return df
+
+def process_policy(
+    record_id: str,
+    title: str,
+    text_url: str,
+    language: str,
+    country: str,
+    category: str,
+    downloader: TextDownloader,
+    extractor: TextExtractor,
+    embed_client: EmbeddingClient,
+    storage: EmbeddingStorage,
+    force_redownload: bool = False
+) -> bool:
+    """
+    Process a single policy through the full pipeline.
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Check if already completed
+        existing = storage.get_record_status(record_id)
+        if existing and existing["status"] == "completed" and not force_redownload:
+            logger.debug(f"Skipping {record_id} - already completed")
+            return True
+
+        # 1. Download text
+        cache_path, was_downloaded = downloader.download(record_id, text_url, force=force_redownload)
+        text_source = cache_path.suffix.lstrip('.')
+
+        # 2. Extract text (truncate to fit embedding model context - 8000 chars ~ 2000 tokens)
+        text = extractor.extract_text(cache_path, max_length=8000)
+
+        # Validate text quality
+        if not extractor.validate_text(text):
+            error_msg = f"Text validation failed for {record_id}"
+            logger.error(error_msg)
+            storage.mark_failed(record_id, error=error_msg, metadata={
+                "title": title, "language": language, "country": country,
+                "category": category, "text_source": text_source
+            })
+            return False
+
+        # 3. Generate embedding
+        embedding = embed_client.generate_embedding(text)
+        if embedding is None:
+            error_msg = f"Embedding generation failed for {record_id}"
+            logger.error(error_msg)
+            storage.mark_failed(record_id, error=error_msg, metadata={
+                "title": title, "language": language, "country": country,
+                "category": category, "text_source": text_source, "text_length": len(text)
+            })
+            return False
+
+        # 4. Store embedding
+        embedding_index = storage.append_embedding(
+            record_id=record_id,
+            text=text,
+            embedding=embedding,
+            metadata={
+                "title": title,
+                "language": language,
+                "country": country,
+                "category": category,
+                "text_source": text_source
+            }
+        )
+
+        # 5. Update manifest
+        embedding_dim = len(embedding)
+        storage.finalize_embedding(
+            record_id=record_id,
+            text_length=len(text),
+            embedding_dim=embedding_dim,
+            metadata={
+                "title": title,
+                "language": language,
+                "country": country,
+                "category": category,
+                "text_source": text_source
+            }
+        )
+
+        logger.info(f"Successfully processed {record_id} (embedding dim={embedding_dim}, index={embedding_index})")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error processing {record_id}: {e}", exc_info=True)
+        storage.mark_failed(record_id, error=str(e))
+        return False
+
+def load_category_map() -> Dict[str, str]:
+    """Load the policy categories from policy_categories.csv."""
+    csv_path = Path("data/policy_categories.csv")
+    if not csv_path.exists():
+        logger.warning(f"Category file not found: {csv_path}")
+        return {}
+
+    df = pd.read_csv(csv_path)
+    return dict(zip(df['Record Id'], df['Category']))
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate embeddings for FAOLEX policies")
+    parser.add_argument(
+        '--input',
+        type=Path,
+        default=Path('data/FAOLEX_Food.csv'),
+        help='Input CSV file'
+    )
+    parser.add_argument(
+        '--limit',
+        type=int,
+        default=10,
+        help='Limit number of policies to process (for testing)'
+    )
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Force re-download and re-processing'
+    )
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=10,
+        help='Batch size for progress updates'
+    )
+    parser.add_argument(
+        '--status',
+        action='store_true',
+        help='Show current status and exit'
+    )
+
+    args = parser.parse_args()
+
+    # Check status mode
+    if args.status:
+        storage = EmbeddingStorage()
+        stats = storage.get_statistics()
+        print("Embedding Storage Status:")
+        print(f"  Total records: {stats['total']}")
+        print(f"  Completed: {stats['completed']}")
+        print(f"  Failed: {stats['failed']}")
+        print(f"  Pending: {stats['pending']}")
+        print(f"  Embeddings file size: {stats['embeddings_file_size_mb']:.2f} MB")
+        return
+
+    # Load data
+    policies = load_policies(args.input, limit=args.limit)
+    categories = load_category_map()
+
+    # Initialize components
+    downloader = TextDownloader()
+    extractor = TextExtractor()
+    embed_client = EmbeddingClient()
+    storage = EmbeddingStorage()
+
+    logger.info(f"Starting embedding generation for {len(policies)} policies")
+    logger.info(f"Embedding dimension: {embed_client.get_embedding_dimension()}")
+
+    # Process each policy
+    success_count = 0
+    fail_count = 0
+
+    for _, row in tqdm(policies.iterrows(), total=len(policies), desc="Processing policies"):
+        record_id = row['Record Id']
+        title = row.get('Title', '')
+        text_url = row.get('Text URL', '')
+        language = row.get('Language of document', '')
+        country = row.get('Country/Territory', '')
+        category = categories.get(record_id, 'unknown')
+
+        success = process_policy(
+            record_id=record_id,
+            title=title,
+            text_url=text_url,
+            language=language,
+            country=country,
+            category=category,
+            downloader=downloader,
+            extractor=extractor,
+            embed_client=embed_client,
+            storage=storage,
+            force_redownload=args.force
+        )
+
+        if success:
+            success_count += 1
+        else:
+            fail_count += 1
+
+    # Final summary
+    logger.info(f"Pipeline complete!")
+    logger.info(f"Successfully processed: {success_count}")
+    logger.info(f"Failed: {fail_count}")
+
+    stats = storage.get_statistics()
+    logger.info(f"Total records in manifest: {stats['total']}")
+    logger.info(f"Completed embeddings: {stats['completed']}")
+    logger.info(f"Embeddings file: {storage.embeddings_file}")
+
+if __name__ == "__main__":
+    main()

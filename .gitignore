@@ -34,3 +34,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Downloaded text files (regenerated as needed)
+data/text_cache/
+
+# (Optional) Large derived data; uncomment if not committing embeddings
+# data/embeddings/
