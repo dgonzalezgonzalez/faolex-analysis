@@ -33,11 +33,22 @@ Examples:
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
-# Add the 'code' directory to Python path so we can import modules
-CODE_DIR = Path(__file__).parent / 'code'
+# ========================================================================
+# CRITICAL: Change working directory to project root
+# This ensures all relative paths in imported modules work correctly
+# regardless of where the user runs the script from.
+# ========================================================================
+PROJECT_ROOT = Path(__file__).parent.resolve()
+os.chdir(PROJECT_ROOT)
+# Add project root to Python path for imports
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+# Add 'code' directory to Python path for module imports
+CODE_DIR = PROJECT_ROOT / 'code'
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
@@ -47,14 +58,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+logger.info(f"Project root: {PROJECT_ROOT}")
+logger.info(f"Working directory set to: {Path.cwd()}")
+logger.info(f"Code directory: {CODE_DIR}")
+
 def check_prerequisites() -> bool:
     """Check that required files exist."""
-    data_dir = Path('data')
+    data_dir = PROJECT_ROOT / 'data'
     required = [data_dir / 'FAOLEX_Food.csv']
 
     missing = [p for p in required if not p.exists()]
     if missing:
         logger.error(f"Missing required files: {missing}")
+        logger.error(f"Please ensure the data directory exists at: {data_dir}")
         return False
 
     logger.info("✅ All prerequisites found")
@@ -64,7 +80,7 @@ def run_classification(force: bool = False) -> bool:
     """Run policy classification by directly calling the module."""
     try:
         import classify_policies
-        output_path = Path('data/policy_categories.csv')
+        output_path = PROJECT_ROOT / 'data' / 'policy_categories.csv'
 
         # If not forcing and output exists, skip
         if not force and output_path.exists():
@@ -74,8 +90,8 @@ def run_classification(force: bool = False) -> bool:
         logger.info(">>> Running policy classification...")
         # Call the process_csv function directly
         classify_policies.process_csv(
-            input_path='data/FAOLEX_Food.csv',
-            output_path='data/policy_categories.csv'
+            input_path=str(PROJECT_ROOT / 'data' / 'FAOLEX_Food.csv'),
+            output_path=str(output_path)
         )
         logger.info("✅ Policy classification completed")
         return True
@@ -244,9 +260,8 @@ def main():
     logger.info("  • data/embeddings/manifest.json")
     logger.info("  • data/strategy_similarities.csv")
     logger.info("\nYou can now:")
-    logger.info("  1. Copy the data/ folder to another machine")
-    logger.info("  2. Run analysis scripts: code/compute_similarities.py, Stata do-files, R scripts")
-    logger.info("  3. Or run: python3 main.py (for full analysis with visualizations)")
+    logger.info("  1. Copy the data/ folder back to this machine for analysis")
+    logger.info("  2. Or run: python3 main.py (for full analysis with visualizations)")
     logger.info("=" * 70)
 
     return 0
