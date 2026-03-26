@@ -132,7 +132,8 @@ This project appears to be in the initial stage with only raw data. Suggested ne
 
 ## Project Conventions
 
-- Keep raw data immutable; store any transformed data in `output/`
+- Keep raw data immutable; derived datasets (embeddings, classifications) are stored alongside in `data/`
 - Document analysis scripts with clear comments explaining methodology
 - Use relative paths: `../data/FAOLEX_Food.csv` from the `code/` directory
-- Consider creating a README.md to document analysis approach and findings
+- The repository already includes README.md for documentation
+- **Note**: The original recommendation to use `output/` for transformed data was superseded by user request to keep derived data in `data/` (e.g., `data/policy_categories.csv`, `data/embeddings/`)
