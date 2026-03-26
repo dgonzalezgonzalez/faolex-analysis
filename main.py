@@ -27,15 +27,27 @@ Examples:
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+# ========================================================================
+# CRITICAL: Change working directory to project root
+# This ensures all relative paths resolve correctly regardless of where
+# the user runs the script from (especially important on Windows).
+# ========================================================================
+PROJECT_ROOT = Path(__file__).parent.resolve()
+os.chdir(PROJECT_ROOT)
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+logger.info(f"Project root: {PROJECT_ROOT}")
+logger.info(f"Working directory set to: {Path.cwd()}")
 
 def run_command(cmd: list, description: str, cwd: Path = None) -> bool:
     """Run a subprocess command and log output."""

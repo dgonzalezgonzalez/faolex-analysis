@@ -216,21 +216,24 @@ Output:
 Run the entire analysis end-to-end with `main.py`:
 
 ```bash
-python3 main.py --limit 10   # Test run
-python3 main.py              # Full 40K+ dataset
+# Test run with 10 policies
+python3 main.py --limit 10
+
+# Full 40K+ dataset (will take many hours/days)
+python3 main.py
 ```
 
 Options: `--model`, `--skip-*`, `--force`. See script for details.
 
-### Embeddings-Only Pipeline (for External Compute)
-For running the heavy embedding computation on a powerful external machine:
-
-```bash
-python3 main_embeddings.py --limit 100   # Test
-python3 main_embeddings.py              # Full dataset
-```
-
-This runs only: classify → embed → similarities. Outputs the core data products (`data/policy_categories.csv`, `data/embeddings/`, `data/strategy_similarities.csv`). After completion, copy the `data/` folder back and run `main.py` (or individual analysis scripts) for visualizations and reports.
+This single script runs all steps:
+1. Policy classification (demand/suppy/unclear)
+2. Text download & extraction
+3. Translation to English (as needed)
+4. Embedding generation (Ollama)
+5. Strategy similarity computation
+6. Descriptive statistics (LaTeX)
+7. World maps (R) and time-trends (Stata)
+8. Interactive HTML map (Python)
 
 ### Stata Time-Trends
 ```stata

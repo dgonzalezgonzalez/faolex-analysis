@@ -131,7 +131,6 @@ The project includes additional analysis outputs:
 
 **Python**:
 - Full orchestration: `main.py` (runs everything end-to-end, now includes interactive map)
-- Embeddings-only: `main_embeddings.py` (classify + embed + similarities only, for external heavy compute)
 
 See README.md for complete usage instructions.
 
