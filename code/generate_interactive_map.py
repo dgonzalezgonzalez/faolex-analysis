@@ -26,6 +26,8 @@ def generate_interactive_map(input_path: Path, output_path: Path):
 
     # Load data
     logger.info(f"Loading data from {input_path}")
+    # Resolve to project root relative path
+    input_path = Path('data/temp/world_map_time_series.csv') if not input_path.exists() else input_path
     df = pd.read_csv(input_path)
 
     # Validate required columns
@@ -178,7 +180,7 @@ def main():
     parser.add_argument(
         '--input',
         type=Path,
-        default=Path('output/world_map_time_series.csv'),
+        default=Path('data/temp/world_map_time_series.csv'),
         help='Input CSV file with time series data'
     )
     parser.add_argument(

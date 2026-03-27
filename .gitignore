@@ -35,6 +35,11 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Temporary data folder (intermediate CSVs, etc.)
+data/temp/
+output/*.csv
+output/*.log
+
 # Downloaded text files (regenerated as needed)
 data/text_cache/
 
