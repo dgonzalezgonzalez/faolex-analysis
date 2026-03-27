@@ -67,9 +67,13 @@ The standard pipeline generates embeddings directly from the `Abstract` field in
 **Advantages**:
 - No external downloads (text is already in the CSV)
 - No text extraction or corruption issues
-- Abstracts are concise, so no chunking needed
+- Smart chunking handles long abstracts:
+  - Translation: abstracts >4500 chars split into chunks (respects Google Translate limits)
+  - Embedding: long texts chunked and averaged (respects model context limits)
+  - All policies embed successfully regardless of abstract length
 - Faster processing and cleaner embeddings
 - Translation applied only to non-English abstracts (cached for reuse)
+- Fully resumable with checkpointing via manifest
 
 **Supported models**:
 - `all-minilm` (default): 384-dimensional vectors, fast inference
@@ -92,9 +96,10 @@ python3 code/abstract_embedder.py --model nomic-embed-text
 
 **Note**: The full-text pipeline (`code/generate_embeddings.py`) is deprecated but retained for reference. It downloads, extracts, and chunks full policy texts, which may contain garbage or corrupted content.
 
-**Test Results** (10 policies, abstract-based):
-- ✅ 10/10 completed, 0 failures
-- Processing time: ~few seconds/policy (much faster than full-text)
+**Test Results** (50 policies, abstract-based with chunking):
+- ✅ 50/50 completed, 0 failures (including very long abstracts >5000 chars)
+- Chunking: Long abstracts automatically split for translation and/or embedding
+- Processing time: ~1-2 sec/policy depending on translation needs
 - Embedding dimension: 384 (all-minilm) or 768 (nomic)
 
 ### 3. Strategy Similarity Analysis

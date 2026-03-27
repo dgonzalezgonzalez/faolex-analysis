@@ -15,7 +15,8 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Set up Python virtual environment with pandas, numpy, Ollama, etc.
 - **Abstract-based embedding pipeline**: embeddings generated directly from the `Abstract` field in the CSV
 - Automatic translation of non-English abstracts (Google Translate, cached)
-- Simplified pipeline: no external downloads, no text extraction, no chunking
+- Smart chunking for long abstracts: translation (>4500 chars) and embedding (>2000 chars) with averaging
+- Simplified pipeline: no external downloads, no text extraction
 - Cosine similarity analysis comparing policy embeddings to strategy query embeddings
 - Time-trend visualizations (Python/matplotlib) showing similarity evolution by policy type
 - Static world maps (R) and interactive animated HTML map (Python/Plotly)
@@ -28,15 +29,19 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 
 **Abstract-Based Embedding Pipeline**:
 - Model: `all-minilm` (default, 384-dimensional) or `nomic-embed-text` (768-dimensional)
-- Translation: Non-English abstracts are translated automatically using Google Translate (results cached in `data/translation_cache.json`)
-- No chunking required (abstracts are short)
-- Embeddings are normalized to unit length for correct cosine similarity
-- Storage: `data/embeddings/embeddings.jsonl` + `manifest.json` with metadata
+- Translation: Non-English abstracts translated via Google Translate (cached in `data/translation_cache.json`)
+- **Chunking for long texts**:
+  - Translation: abstracts >4500 chars split into chunks (2000 char target, 200 overlap) to respect API limits
+  - Embedding: texts >2000 chars (for all-minilm) or >5000 chars (for nomic) chunked and averaged
+- Embeddings normalized to unit length for correct cosine similarity
+- Storage: `data/embeddings/embeddings.jsonl` + `manifest.json` with full metadata
+- Resumable: interrupted runs continue where they left off via manifest tracking
 
 **Processing Speed**:
 - English abstracts: ~0.3 seconds/policy
 - Non-English abstracts (with translation): ~1.0-1.5 seconds/policy (first translation cached thereafter)
 - For the full dataset (~40K policies): estimated 12-20 hours depending on translation mix
+- **Note**: With smart chunking, all policies embed successfully regardless of abstract length (previously long abstracts failed)
 
 **Key Code Files**:
 - `code/abstract_embedder.py` - Generate embeddings from abstracts (primary script)
