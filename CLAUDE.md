@@ -11,6 +11,21 @@ This is a data analysis project focused on the FAOLEX (Food and Agriculture Orga
 - **Data products**: `data/policy_categories.csv`, `data/embeddings/`, `data/text_cache/`
 - **Output**: `output/` - Future analysis results, visualizations, and reports
 
+## Directory Conventions
+
+**Important**: Keep the repository organized by following these conventions:
+
+- `output/` - Final results only (PDFs, PNGs, HTML, LaTeX files). **No CSV files, no log files**.
+- `data/temp/` - Intermediate/temporary files (CSV exports, time-series data, log files, .dta files used for processing).
+- `data/` - Raw data and derived datasets that are part of the analysis pipeline (CSV/DTA files that are inputs to scripts).
+- `code/` - All Python, R, and Stata scripts.
+- Logs from any script execution should go to `data/temp/`, not `output/`.
+
+When creating new outputs:
+1. Final visualizations/reports → `output/`
+2. Intermediate data files (CSV, temp DTA) → `data/temp/`
+3. Log files → `data/temp/`
+
 ## Data Structure
 
 The CSV dataset contains 19 columns:
