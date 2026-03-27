@@ -3,8 +3,8 @@
 Master orchestrator for the FAOLEX analysis pipeline.
 
 This script runs the complete analysis from raw data to final outputs:
-1. Policy classification (demand/supply)
-2. Embedding generation with translation and chunking
+1. Policy classification (demand/supply) [skipped if already exists]
+2. Abstract-based embedding generation with translation
 3. Cosine similarity computation for strategy queries
 4. Descriptive statistics and visualizations
 
@@ -22,7 +22,7 @@ Examples:
     python3 main.py --model nomic-embed-text
 
     # Skip steps that are already done
-    python3 main.py --skip-embeddings --skip-similarities
+    python3 main.py --skip-similarities --skip-analysis
 """
 
 import argparse
@@ -100,17 +100,7 @@ def main():
         type=str,
         default='all-minilm',
         choices=['nomic-embed-text', 'all-minilm'],
-        help='Embedding model to use'
-    )
-    parser.add_argument(
-        '--skip-download',
-        action='store_true',
-        help='Skip text download step (use cached texts)'
-    )
-    parser.add_argument(
-        '--skip-embeddings',
-        action='store_true',
-        help='Skip embedding generation (use existing embeddings)'
+        help='Embedding model to use (default: all-minilm)'
     )
     parser.add_argument(
         '--skip-similarities',
@@ -172,13 +162,11 @@ def main():
         'strategy similarity scores'
     )
 
-    # Check analysis outputs
-    analysis_needed = args.force or not check_file_exists(
-        output_dir / 'descriptive_statistics.tex',
-        'descriptive statistics LaTeX'
-    ) or not check_file_exists(
-        output_dir / 'world_similarity_map.pdf',
-        'world similarity map'
+    # Check analysis outputs (must have both maps and LaTeX)
+    analysis_needed = args.force or not (
+        check_file_exists(output_dir / 'descriptive_statistics.tex', 'descriptive statistics LaTeX') and
+        check_file_exists(output_dir / 'world_similarity_map.pdf', 'world similarity map') and
+        check_file_exists(output_dir / 'strategy_sus_trends.pdf', 'trend graphs')
     )
 
     # ===========================
@@ -198,23 +186,22 @@ def main():
         logger.info("\n>>> Step 1: Policy Classification [SKIPPED] (already exists) <<<")
 
     # ===========================
-    # STEP 2: EMBEDDING GENERATION
+    # STEP 2: EMBEDDING GENERATION (ABSTRACT-BASED)
     # ===========================
     if embeddings_needed:
         logger.info("\n>>> Step 2: Embedding Generation <<<")
+        logger.info("Using abstract-based embeddings (high quality, no downloads)")
 
-        cmd = [sys.executable, 'code/generate_embeddings.py']
+        cmd = [sys.executable, 'code/abstract_embedder.py']
         if args.limit:
             cmd.extend(['--limit', str(args.limit)])
         if args.model:
             cmd.extend(['--model', args.model])
         if args.force:
             cmd.append('--force')
+        desc = f"Generate embeddings from policy abstracts (model={args.model}, limit={args.limit or 'all'})"
 
-        if run_command(
-            cmd,
-            description=f"Generate embeddings (model={args.model}, limit={args.limit or 'all'})"
-        ):
+        if run_command(cmd, description=desc):
             logger.info("✅ Embedding generation completed")
         else:
             logger.error("❌ Pipeline stopped: embedding generation failed")
@@ -238,6 +225,24 @@ def main():
             return 1
     else:
         logger.info("\n>>> Step 3: Strategy Similarity Computation [SKIPPED] (already exists) <<<")
+
+    # ===========================
+    # STEP 2b: BUILD ANALYSIS DATASET
+    # ===========================
+    # After embeddings and similarities, build the analysis dataset with metadata
+    analysis_dataset_path = data_dir / 'analysis_dataset.dta'
+    if args.force or not analysis_dataset_path.exists():
+        logger.info("\n>>> Step 2b: Building Analysis Dataset <<<")
+        if run_command(
+            [sys.executable, 'code/build_analysis_dataset.py'],
+            description="Build analysis dataset with metadata"
+        ):
+            logger.info("✅ Analysis dataset built")
+        else:
+            logger.error("❌ Analysis dataset build failed")
+            return 1
+    else:
+        logger.info("\n>>> Step 2b: Analysis Dataset [SKIPPED] (already exists) <<<")
 
     # ===========================
     # STEP 4: ANALYSIS & VISUALIZATION
@@ -269,7 +274,16 @@ def main():
         else:
             logger.warning("⚠️  Rscript not found, skipping world map generation")
 
-        # 4c: Generate interactive HTML time-series map
+        # 4c: Generate time trend graphs
+        if run_command(
+            [sys.executable, 'code/generate_trends.py'],
+            description="Generate time trend graphs"
+        ):
+            logger.info("✅ Time trend graphs generated")
+        else:
+            logger.error("❌ Analysis: trend graphs failed")
+
+        # 4d: Generate interactive HTML time-series map
         if run_command(
             [sys.executable, 'code/generate_interactive_map.py'],
             description="Generate interactive animated HTML world map"

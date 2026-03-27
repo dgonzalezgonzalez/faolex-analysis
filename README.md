@@ -13,24 +13,39 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Implemented rule-based classification to categorize policies as **demand-side** or **supply-side**
 - Generated `data/policy_categories.csv` with classification results
 - Set up Python virtual environment with pandas, numpy, Ollama, etc.
-- Built and optimized vector embedding pipeline using Ollama's `all-minilm` model (384-dim)
-- Implemented automatic translation of non-English texts (Google Translate, cached)
-- Implemented text chunking with adaptive sizing based on model context limits
-- Added cosine similarity analysis comparing policy embeddings to strategy query embeddings
-- Generated time-trend visualizations (Stata) showing similarity evolution by policy type
+- **Abstract-based embedding pipeline**: embeddings generated directly from the `Abstract` field in the CSV
+- Automatic translation of non-English abstracts (Google Translate, cached)
+- Simplified pipeline: no external downloads, no text extraction, no chunking
+- Cosine similarity analysis comparing policy embeddings to strategy query embeddings
+- Time-trend visualizations (Python/matplotlib) showing similarity evolution by policy type
+- Static world maps (R) and interactive animated HTML map (Python/Plotly)
+- LaTeX descriptive statistics tables
 
 **Classification Results**:
 - Supply-side policies: 27,049 (67.2%)
 - Demand-side policies: 8,369 (20.8%)
 - Unclear/ambiguous: 4,837 (12.0%)
 
-**Enhanced Embedding Pipeline**:
-- Model: `all-minilm` (fast, 384-dimensional) with fallback to `nomic-embed-text` (768-dim)
-- Translation: Automatic detection + forced translation based on CSV language field
-- Chunking: Adaptive - `all-minilm` uses 300-char chunks (30 overlap); `nomic` uses 2000-char chunks
-- Normalization: Averaged chunk embeddings are explicitly normalized to unit length for correct cosine similarity
-- Storage: `data/embeddings/embeddings.jsonl` + `manifest.json` with full metadata (translation, chunk counts, etc.)
-- Batch embedding: Configurable batch size for efficient Ollama API usage
+**Abstract-Based Embedding Pipeline**:
+- Model: `all-minilm` (default, 384-dimensional) or `nomic-embed-text` (768-dimensional)
+- Translation: Non-English abstracts are translated automatically using Google Translate (results cached in `data/translation_cache.json`)
+- No chunking required (abstracts are short)
+- Embeddings are normalized to unit length for correct cosine similarity
+- Storage: `data/embeddings/embeddings.jsonl` + `manifest.json` with metadata
+
+**Processing Speed**:
+- English abstracts: ~0.3 seconds/policy
+- Non-English abstracts (with translation): ~1.0-1.5 seconds/policy (first translation cached thereafter)
+- For the full dataset (~40K policies): estimated 12-20 hours depending on translation mix
+
+**Key Code Files**:
+- `code/abstract_embedder.py` - Generate embeddings from abstracts (primary script)
+- `code/compute_similarities.py` - Calculate cosine similarities for strategy queries
+- `code/build_analysis_dataset.py` - Merge embeddings with metadata for analysis
+- `code/generate_descriptive_tables.py` - Generate LaTeX tables
+- `code/generate_trends.py` - Generate time-trend graphs
+- `code/generate_interactive_map.py` - Generate animated HTML world map
+- `code/world_similarity_map.R` - Generate static world maps
 
 **Interactive Time-Series World Map**:
 - Generated with Plotly (HTML, self-contained with CDN dependency)
@@ -38,12 +53,6 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Animated by year with play/pause controls
 - Hover tooltips display country, year, and exact similarity scores
 - Output: `output/interactive_strategy_map.html`
-
-**Test Results** (10 policies):
-- ✅ 10/10 policies successfully embedded
-- Chunks per policy: 1–199 (depending on text length)
-- Processing time: ~8 sec/policy
-- Embedding dimension: 384 (all-minilm)
 
 **Strategy Similarity Analysis**:
 Three query strings measure alignment with strategic dimensions:
@@ -53,12 +62,6 @@ Three query strings measure alignment with strategic dimensions:
 
 Output: `data/strategy_similarities.csv` with cosine similarity scores for each policy.
 Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, demand-side, and supply-side policies.
-
-**Key Code Files**:
-- `code/generate_embeddings.py` - Main pipeline orchestration
-- `code/embedding_client.py` - Ollama API client with batch support and normalization
-- `code/compute_similarities.py` - Strategy query similarity computation
-- `code/strategy_similarity_trends.do` - Stata script for time-series plots
 
 ## Repository Structure
 
@@ -74,22 +77,29 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
 │   ├── policy_categories.csv     # Demand/supply classifications
 │   ├── strategy_similarities.csv # Cosine similarity scores for strategy queries
 │   ├── strategy_similarities_with_dates.csv  # Merged dataset for Stata
+│   ├── analysis_dataset.csv      # Combined dataset for analysis (CSV)
+│   ├── analysis_dataset.dta      # Combined dataset for analysis (Stata)
 │   ├── embeddings/
 │   │   ├── embeddings.jsonl      # Policy vector embeddings (JSON Lines)
 │   │   └── manifest.json         # Processing manifest with metadata
-│   └── text_cache/               # Cached downloaded text files (not committed)
+│   └── temp/
+│       └── world_map_time_series.csv  # Intermediate time-series data (aggregated by country-year)
 ├── code/
 │   ├── classify_policies.py      # Policy classification
-│   ├── text_downloader.py        # Download and cache text files
-│   ├── text_extractor.py         # Extract text from TXT/PDF
-│   ├── text_translator.py        # Language detection & translation
-│   ├── text_chunker.py           # Split text into overlapping chunks
+│   ├── abstract_embedder.py      # **Primary**: Generate embeddings from abstracts (with translation)
+│   ├── generate_embeddings.py    # Legacy: full-text pipeline (deprecated)
 │   ├── embedding_client.py       # Ollama embedding client (batch + normalization)
 │   ├── embedding_storage.py      # Embeddings storage & manifest management
-│   ├── generate_embeddings.py    # Main embedding pipeline orchestrator
 │   ├── compute_similarities.py   # Strategy query similarity computation
-│   └── strategy_similarity_trends.do  # Stata script for time-trend plots
+│   ├── build_analysis_dataset.py # Build analysis dataset from embeddings + metadata
+│   ├── generate_descriptive_tables.py  # Generate LaTeX tables
+│   ├── generate_interactive_map.py    # Generate animated HTML world map
+│   ├── generate_timeseries.py    # Generate time-series data (for R script)
+│   ├── world_similarity_map.R    # Generate static world maps + intermediate CSV
+│   ├── generate_trends.py        # Generate time-trend graphs
+│   └── strategy_similarity_trends.do  # (Legacy) Stata script for time-trend plots
 └── output/                       # Generated figures and reports
+    ├── descriptive_statistics.tex
     ├── strategy_sus_trends.png
     ├── strategy_sus_trends.pdf
     ├── strategy_fs_trends.png
@@ -102,8 +112,6 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
     ├── strategy_fs_map.pdf
     ├── strategy_nut_map.png
     ├── strategy_nut_map.pdf
-    ├── world_similarity_map.png
-    ├── world_similarity_map.pdf
     └── interactive_strategy_map.html  # Animated world map with slider
 ```
 
@@ -126,23 +134,25 @@ source venv/bin/activate
 python3 code/classify_policies.py
 ```
 
-### Vector Embeddings Generation
+### Vector Embeddings Generation (Abstract-Based)
+
+The standard pipeline generates embeddings directly from the `Abstract` field in `FAOLEX_Food.csv`.
+
 ```bash
 # Test with 10 policies
-python3 code/generate_embeddings.py --limit 10
+python3 code/abstract_embedder.py --limit 10
 
-# Process all policies (may take hours/days)
-python3 code/generate_embeddings.py
-
-# Resume or check status
-python3 code/generate_embeddings.py --status
+# Process all policies with abstracts (may take many hours)
+python3 code/abstract_embedder.py
 
 # Force re-processing (e.g., after fixing issues)
-python3 code/generate_embeddings.py --force --limit 10
+python3 code/abstract_embedder.py --force --limit 10
 
 # Use a different embedding model
-python3 code/generate_embeddings.py --model nomic-embed-text  # 768-dim, larger context
+python3 code/abstract_embedder.py --model nomic-embed-text  # 768-dim, larger context
 ```
+
+Non-English abstracts are automatically translated to English before embedding. Translation results are cached in `data/translation_cache.json` for reuse.
 
 ### Strategy Similarity Analysis
 Compute cosine similarity between policy embeddings and predefined strategy queries:
@@ -156,40 +166,39 @@ python3 code/compute_similarities.py --output data/my_results.csv
 Output: `data/strategy_similarities.csv` (or custom path) with columns:
 `record_id, strategy_sus, strategy_fs, strategy_nut`
 
-### Time-Trend Visualization (Stata)
-The Stata do-file (`code/strategy_similarity_trends.do`) creates line graphs showing average similarity trends over time for all policies, demand-side, and supply-side subsets.
-```stata
-do code/strategy_similarity_trends.do
+### Time-Trend Visualization (Python)
+The Python script (`code/generate_trends.py`) creates line graphs showing average similarity trends over time for all policies, demand-side, and supply-side subsets.
+
+```bash
+python3 code/generate_trends.py
 ```
+
 Output figures (PNG and PDF) are saved to `output/`:
 - `strategy_sus_trends.*` - Environmentally sustainable strategies
 - `strategy_fs_trends.*` - Food systems strategy frameworks
 - `strategy_nut_trends.*` - Nutrition/public health nutrition strategies
 
 ### World Map Visualization (R)
-The enhanced R script (`code/world_similarity_map_enhanced.R`) creates:
+The R script (`code/world_similarity_map.R`) creates:
 
 1. **Three separate static maps** (one per strategy, no titles):
    - `output/strategy_sus_map.pdf` / `.png` - Sustainability
    - `output/strategy_fs_map.pdf` / `.png` - Food Systems
    - `output/strategy_nut_map.pdf` / `.png` - Nutrition
 
-2. **Combined static world map**:
-   - `output/world_similarity_map.pdf` / `.png` - All three strategies in one figure
-
-3. **Time-series data** (used by the Python interactive map generator):
-   - `output/world_map_time_series.csv` - Country-year averaged scores
+2. **Time-series data** (intermediate file for Python interactive map):
+   - `data/temp/world_map_time_series.csv` - Country-year averaged scores
 
 Run:
 ```bash
-Rscript --vanilla code/world_similarity_map_enhanced.R
+Rscript --vanilla code/world_similarity_map.R
 ```
 
 ### Interactive Animated World Map (Python)
 Create an interactive HTML map with time-series animation:
 
 ```bash
-# Generate the interactive map from time series data
+# Generate the interactive map from time series data (reads from data/temp/ by default)
 python3 code/generate_interactive_map.py
 
 # Customize input/output paths
@@ -223,29 +232,16 @@ python3 main.py --limit 10
 python3 main.py
 ```
 
-Options: `--model`, `--skip-*`, `--force`. See script for details.
+Options: `--model`, `--force`, `--skip-similarities`, `--skip-analysis`. See script for details.
 
 This single script runs all steps:
-1. Policy classification (demand/suppy/unclear)
-2. Text download & extraction
-3. Translation to English (as needed)
-4. Embedding generation (Ollama)
-5. Strategy similarity computation
-6. Descriptive statistics (LaTeX)
-7. World maps (R) and time-trends (Stata)
-8. Interactive HTML map (Python)
-
-### Stata Time-Trends
-```stata
-do code/strategy_similarity_trends.do
-```
-Outputs: `output/strategy_*_trends.pdf/png`
-
-### Stata Descriptive Tables
-```stata
-do code/descriptive_tables.do
-```
-Generates LaTeX tables including sample overview, strategy scores by category, and top/bottom policies: `output/descriptive_statistics.tex`
+1. Policy classification (demand/suppy/unclear) [skipped if already exists]
+2. **Abstract-based embedding generation** (translation as needed, no downloads)
+3. Analysis dataset construction
+4. Strategy similarity computation
+5. Descriptive statistics (LaTeX)
+6. World maps (R) and time-trends (Python)
+7. Interactive HTML map (Python)
 
 
 ## Next Steps

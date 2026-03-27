@@ -90,13 +90,15 @@ class TextTranslator:
         english_indicators = ['english', 'en', 'eng', 'anglais', 'ingles']
         return not any(indicator in lang for indicator in english_indicators)
 
-    def translate(self, text: str, force: bool = False) -> str:
+    def translate(self, text: str, force: bool = False, source_lang: str = None) -> str:
         """
         Translate text to English if not already English.
 
         Args:
             text: Input text
             force: Force translation even if detected as English
+            source_lang: Optional source language code (e.g., 'fr', 'es') to override auto-detection.
+                         Useful when the CSV provides language metadata.
 
         Returns:
             Translated text (or original if already English)
@@ -109,31 +111,44 @@ class TextTranslator:
             logger.debug("Text already in English, skipping translation")
             return text
 
-        # Check cache
-        try:
-            detected_lang = detect(text) if not force else 'unknown'
-        except:
-            detected_lang = 'unknown'
+        # Determine source language for caching/translation
+        if source_lang:
+            # Use provided source language directly
+            actual_source = source_lang
+        else:
+            try:
+                actual_source = detect(text) if not force else 'unknown'
+            except:
+                actual_source = 'unknown'
 
-        cache_key = self._cache_key(text, detected_lang)
+        # Check cache (use source_lang if provided as part of key)
+        cache_key = self._cache_key(text, actual_source)
         if cache_key in self.cache and not force:
             logger.debug("Translation cache hit")
             return self.cache[cache_key]
 
         # Translate
         try:
-            logger.info(f"Translating {len(text)} chars from {detected_lang} to English")
+            logger.info(f"Translating {len(text)} chars from {actual_source} to English")
+            # Choose translator based on whether we have explicit source
+            if source_lang:
+                # Use explicit source language
+                translator = GoogleTranslator(source=source_lang, target='en')
+            else:
+                # Use the default auto-detect translator
+                translator = self.translator
+
             # Deep translator has max length, so chunk if needed
             max_chunk = 5000
             if len(text) <= max_chunk:
-                translated = self.translator.translate(text)
+                translated = translator.translate(text)
             else:
                 # Split into chunks and translate separately
                 chunks = [text[i:i+max_chunk] for i in range(0, len(text), max_chunk)]
                 translated_chunks = []
                 for chunk in chunks:
                     if chunk.strip():
-                        translated_chunks.append(self.translator.translate(chunk))
+                        translated_chunks.append(translator.translate(chunk))
                 translated = ' '.join(translated_chunks)
 
             # Cache result

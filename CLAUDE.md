@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a data analysis project focused on the FAOLEX (Food and Agriculture Organization of the United Nations Legislative database) food legislation dataset. The repository contains:
 
-- **Data**: `data/FAOLEX_Food.csv` - Raw dataset (40,256 records)
-- **Code**: `code/` - Analysis scripts: policy classification, text downloading, embedding generation
-- **Data products**: `data/policy_categories.csv`, `data/embeddings/`, `data/text_cache/`
-- **Output**: `output/` - Future analysis results, visualizations, and reports
+- **Data**: `data/FAOLEX_Food.csv` - Raw dataset (40,256+ records)
+- **Code**: `code/` - Analysis scripts: policy classification, abstract-based embedding generation, similarity analysis, visualization
+- **Data products**: `data/policy_categories.csv`, `data/embeddings/`, `data/analysis_dataset.dta`, `data/strategy_similarities.csv`, `data/temp/`
+- **Output**: `output/` - Final results: LaTeX tables, static maps, trend graphs, interactive HTML map
 
 ## Directory Conventions
 
@@ -54,48 +54,48 @@ A rule-based classification script (`code/classify_policies.py`) to categorize e
 **Output**: `data/policy_categories.csv`
 - 40,255 policies classified: 67.2% supply-side, 20.8% demand-side, 12.0% unclear
 
-### 2. Vector Embedding Pipeline (Optimized)
+### 2. Abstract-Based Embedding Pipeline (Standard)
 
-A modular system to download policy texts, translate to English, chunk, and generate vector embeddings using Ollama's `all-minilm` model (default) or `nomic-embed-text`.
+The standard pipeline generates embeddings directly from the `Abstract` field in `FAOLEX_Food.csv`, avoiding external downloads and ensuring high-quality text input.
 
 **Components**:
-- `code/text_downloader.py` - Downloads and caches `.txt` or `.pdf` files from FAOLEX URLs
-- `code/text_extractor.py` - Extracts text with validation (up to 100k chars)
-- `code/text_translator.py` - Detects language and translates non-English to English (Google Translate, cached)
-- `code/text_chunker.py` - Splits long texts into overlapping chunks (adaptive: 300/30 for all-minilm, 2000/200 for nomic)
-- `code/embedding_client.py` - Ollama API wrapper; batch embedding + normalization
-- `code/embedding_storage.py` - JSON Lines storage + manifest with detailed metadata
-- `code/generate_embeddings.py` - Main orchestrator with resume capability
+- `code/abstract_embedder.py` - Main script: loads abstracts, translates non-English, generates embeddings
+- `code/text_translator.py` - Language detection and translation (Google Translate, cached)
+- `code/embedding_client.py` - Ollama API wrapper with batch processing and normalization
+- `code/embedding_storage.py` - JSON Lines storage + manifest with metadata
 
-**Key Improvements**:
-- **Adaptive chunk sizing**: Prevents context overflow for smaller models
-- **Normalization**: Final averaged embeddings are unit-normalized for correct cosine similarity
-- **Batch processing**: Configurable batch size for efficiency
-- **Translation logic**: Uses CSV language field + fallback detection
+**Advantages**:
+- No external downloads (text is already in the CSV)
+- No text extraction or corruption issues
+- Abstracts are concise, so no chunking needed
+- Faster processing and cleaner embeddings
+- Translation applied only to non-English abstracts (cached for reuse)
 
-**Test Results** (10 policies):
-- ✅ 10/10 completed, 0 failures
-- Chunks per policy: 1–199 (depending on text length)
-- Processing time: ~8 sec/policy (all-minilm)
-- Embedding dimension: 384 (all-minilm) or 768 (nomic)
+**Supported models**:
+- `all-minilm` (default): 384-dimensional vectors, fast inference
+- `nomic-embed-text`: 768-dimensional vectors, larger context
 
 **Usage**:
 ```bash
 # Test with 10 policies
-python3 code/generate_embeddings.py --limit 10
+python3 code/abstract_embedder.py --limit 10
 
-# Check status
-python3 code/generate_embeddings.py --status
-
-# Full dataset (may take many hours)
-python3 code/generate_embeddings.py
+# Process all policies with abstracts
+python3 code/abstract_embedder.py
 
 # Force re-processing
-python3 code/generate_embeddings.py --force --limit 10
+python3 code/abstract_embedder.py --force --limit 10
 
 # Use different model
-python3 code/generate_embeddings.py --model nomic-embed-text
+python3 code/abstract_embedder.py --model nomic-embed-text
 ```
+
+**Note**: The full-text pipeline (`code/generate_embeddings.py`) is deprecated but retained for reference. It downloads, extracts, and chunks full policy texts, which may contain garbage or corrupted content.
+
+**Test Results** (10 policies, abstract-based):
+- ✅ 10/10 completed, 0 failures
+- Processing time: ~few seconds/policy (much faster than full-text)
+- Embedding dimension: 384 (all-minilm) or 768 (nomic)
 
 ### 3. Strategy Similarity Analysis
 
@@ -131,21 +131,24 @@ python3 code/generate_interactive_map.py
 # Optional: --input path/to/time_series.csv  --output path/to/output.html
 ```
 
-**Note**: The time series CSV (`output/world_map_time_series.csv`) is the intermediate data used to generate the HTML. After generating the interactive map, the CSV can be removed.
+**Note**: The time series CSV (`data/temp/world_map_time_series.csv`) is the intermediate data used to generate the HTML. After generating the interactive map, the CSV can be removed.
 
-### 5. Visualization & Analysis (Stata, R, Python)
+### 5. Visualization & Analysis (Python, R)
 
 The project includes additional analysis outputs:
 
-**Stata**:
-- Time-trend line graphs: `code/strategy_similarity_trends.do` → `output/strategy_*_trends.pdf/png`
-- Descriptive LaTeX tables: `code/descriptive_tables.do` → `output/descriptive_statistics.tex`
+**Python**:
+- Descriptive LaTeX tables: `code/generate_descriptive_tables.py` → `output/descriptive_statistics.tex`
+- Time-trend graphs: `code/generate_trends.py` → `output/strategy_*_trends.pdf/png`
+- Interactive animated world map: `code/generate_interactive_map.py` → `output/interactive_strategy_map.html`
+- Timeseries data generation: `code/generate_timeseries.py` → `data/temp/world_map_time_series.csv` (intermediate)
 
 **R**:
-- Static world maps by country: `code/world_similarity_map_enhanced.R` → `output/strategy_*_map.pdf/png`
+- Static world maps by country: `code/world_similarity_map.R` → `output/strategy_sus_map.pdf/png`, `output/strategy_fs_map.pdf/png`, `output/strategy_nut_map.pdf/png`
+- Also generates intermediate timeseries CSV: `data/temp/world_map_time_series.csv`
 
-**Python**:
-- Full orchestration: `main.py` (runs everything end-to-end, now includes interactive map)
+**Full orchestration**:
+- `main.py` runs the complete pipeline end-to-end (Python + R components)
 
 See README.md for complete usage instructions.
 
@@ -164,7 +167,7 @@ The `code/compute_similarities.py` script computes cosine similarity between pol
 
 **Usage**:
 ```bash
-# Ensure embeddings exist first (run generate_embeddings.py)
+# Ensure embeddings exist first (run abstract_embedder.py)
 python3 code/compute_similarities.py
 
 # Use different embedding model (must match policy embeddings)
@@ -234,12 +237,15 @@ See README.md for detailed usage options.
 ## Recent Updates
 
 The project now includes:
+- **Abstract-based embedding pipeline**: Embeddings generated directly from policy abstracts (high quality, no downloads, no chunking)
+- **Automatic translation**: Non-English abstracts are translated via Google Translate (cached)
 - **Strategy similarity analysis**: Comparing policy embeddings to three strategic query dimensions
-- **Stata time-trend visualizations**: Line graphs showing similarity evolution by policy category
+- **Python time-trend visualizations**: Line graphs showing similarity evolution by policy category
 - **R world maps**: Geographic visualization of similarity scores (static PDFs)
 - **Interactive HTML world map**: Animated time-series map with Play/Pause slider for all three strategies
 - **LaTeX descriptive tables**: Automated report tables
-- **Master orchestrator**: Single entry point for full pipeline (now generates interactive map)
+- **Master orchestrator**: Single entry point (`main.py`) for full pipeline (Python + R)
+- **Clean intermediate file organization**: All CSV temporaries stored in `data/temp/`
 
 ## Suggested Workflow
 
@@ -260,22 +266,19 @@ The project now includes:
 
 - Keep raw data immutable; derived datasets (embeddings, classifications) are stored alongside in `data/`
 - Document analysis scripts with clear comments explaining methodology
-- Use relative paths from the project root
-- The repository includes README.md for project overview and usage
-- Use `main.py` as the canonical entry point for end-to-end execution
-
-## Notes for Code Generation
-
-- The dataset has a BOM (Byte Order Mark) at the beginning; use appropriate encoding (`utf-8-sig` in Python)
-- Dates are in various formats (DD-MM-YYYY, YYYY, year only) and may require parsing
-- Keywords are semicolon-separated and may need tokenization
-- Some fields have multiple values (Regional organizations, Keywords)
-- The data is primarily focused on food and nutrition legislation but may contain other domains
-
-## Project Conventions
-
-- Keep raw data immutable; derived datasets (embeddings, classifications) are stored alongside in `data/`
-- Document analysis scripts with clear comments explaining methodology
 - Use relative paths: `../data/FAOLEX_Food.csv` from the `code/` directory
 - The repository already includes README.md for documentation
 - **Note**: The original recommendation to use `output/` for transformed data was superseded by user request to keep derived data in `data/` (e.g., `data/policy_categories.csv`, `data/embeddings/`)
+- Use `main.py` as the canonical entry point for end-to-end execution
+
+## Documentation Maintenance
+
+**Important**: Whenever you implement significant changes, add new features, or modify existing analysis pipelines, you MUST also update the README.md file to reflect these changes. This ensures the repository documentation stays current and useful for anyone reviewing or using the project.
+
+- Keep the "Current Status" section updated with completed work
+- Update the "Repository Structure" section when adding/removing files
+- Add new usage examples when modifying or adding scripts
+- Document any new data products in the appropriate sections
+- Remove references to deprecated files or functionality
+
+The README.md serves as the primary documentation for the repository, while CLAUDE.md provides implementation guidance. Both should be kept in sync with the project's evolution.

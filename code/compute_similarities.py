@@ -64,7 +64,7 @@ def main():
     logger.info(f"Loaded {len(policies)} policy embeddings")
 
     if len(policies) == 0:
-        logger.error("No embeddings found. Run generate_embeddings.py first.")
+        logger.error("No embeddings found. Run abstract_embedder.py first.")
         return
 
     # 2. Generate embeddings for strategy queries

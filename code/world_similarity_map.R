@@ -114,10 +114,13 @@ anim_data <- df %>%
   mutate(iso3 = countrycode(country, "country.name", "iso3c", warn = FALSE)) %>%
   filter(!is.na(iso3))
 
-# Save aggregated time data for potential external use
-write.csv(anim_data, file.path(output_dir, "world_map_time_series.csv"), row.names = FALSE)
+# Save aggregated time data for potential external use (intermediate file)
+# According to project conventions, intermediate CSVs go to data/temp/
+intermediate_csv <- "data/temp/world_map_time_series.csv"
+dir.create("data/temp", showWarnings = FALSE, recursive = TRUE)
+write.csv(anim_data, intermediate_csv, row.names = FALSE)
 
-cat("  ✓ Time-series data saved to world_map_time_series.csv\n")
+cat(sprintf("  ✓ Time-series data saved to %s\n", intermediate_csv))
 cat("\n✅ All maps generated successfully!\n")
 cat(sprintf("   Countries: %d\n", nrow(country_data)))
 cat(sprintf("   Years: %d-%d\n", min(anim_data$year), max(anim_data$year)))

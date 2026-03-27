@@ -80,7 +80,14 @@
       "Bash(Rscript code/world_similarity_map_enhanced.R)",
       "Bash(grep -E \"\\\\.\\(pdf|png|html\\)$\")",
       "Bash(python main.py)",
-      "Bash(grep -E \"\\\\.csv$\")"
+      "Bash(grep -E \"\\\\.csv$\")",
+      "Bash(python main.py --use-abstract --limit 10 --force)",
+      "Bash(grep -E \"\\\\.csv$|\\\\.dta$\")",
+      "Bash(grep -n world_map_time_series code/*.R code/*.py code/*.do)",
+      "Bash(python3 -c \":*)",
+      "Bash(sed -n '76,116p' README.md)",
+      "Read(//tmp/**)",
+      "Bash(grep:*)"
     ]
   }
 }
