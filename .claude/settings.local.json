@@ -79,7 +79,8 @@
       "Bash(pdflatex -interaction=nonstopmode descriptive_statistics_full.tex)",
       "Bash(Rscript code/world_similarity_map_enhanced.R)",
       "Bash(grep -E \"\\\\.\\(pdf|png|html\\)$\")",
-      "Bash(python main.py)"
+      "Bash(python main.py)",
+      "Bash(grep -E \"\\\\.csv$\")"
     ]
   }
 }
