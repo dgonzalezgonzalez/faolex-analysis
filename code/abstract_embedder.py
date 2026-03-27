@@ -3,14 +3,20 @@
 Generate embeddings directly from the Abstract field in FAOLEX_Food.csv.
 This replaces the full-text download/extract/translate pipeline with a simpler,
 higher-quality approach that avoids corrupted PDFs and translation issues.
+
+Handles long abstracts by:
+- Chunking before translation (>4500 chars) to respect Google Translate limits
+- Chunking before embedding (if needed for model context) and averaging chunk embeddings
 """
 
 import argparse
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import List, Tuple
 import pandas as pd
 from tqdm import tqdm
+import numpy as np
+import re
 
 from text_translator import TextTranslator
 from embedding_client import EmbeddingClient
@@ -21,6 +27,67 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class TextChunker:
+    """Split text into overlapping chunks for translation or embedding."""
+
+    def __init__(
+        self,
+        chunk_size: int = 2000,  # characters per chunk
+        overlap: int = 200,      # overlap between chunks
+        min_chunk_size: int = 100
+    ):
+        """
+        Args:
+            chunk_size: Target size for each chunk (in characters)
+            overlap: Number of characters to overlap between chunks
+            min_chunk_size: Minimum acceptable chunk size
+        """
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+        self.min_chunk_size = min_chunk_size
+
+    def chunk_text(self, text: str) -> List[str]:
+        """
+        Split text into overlapping chunks. Prefers breaking at sentence boundaries.
+
+        Args:
+            text: Input text to chunk
+
+        Returns:
+            List of text chunks
+        """
+        if not text or len(text) <= self.chunk_size:
+            return [text] if text else []
+
+        chunks = []
+        start = 0
+        text_len = len(text)
+
+        while start < text_len:
+            end = min(start + self.chunk_size, text_len)
+
+            # If not at the end, try to break at a sentence boundary
+            if end < text_len:
+                search_start = max(start, end - 200)
+                segment = text[search_start:end]
+                match = re.search(r'[.!?]\s+', segment)
+                if match:
+                    boundary_pos = search_start + match.start() + 1
+                    if boundary_pos - start >= self.min_chunk_size:
+                        end = boundary_pos
+
+            chunk = text[start:end].strip()
+            if chunk and len(chunk) >= self.min_chunk_size:
+                chunks.append(chunk)
+
+            start = end - self.overlap if end < text_len else text_len
+            if start >= text_len:
+                break
+
+        logger.debug(f"Chunked text into {len(chunks)} chunks (original: {text_len} chars)")
+        return chunks
 
 
 def load_policy_abstracts(csv_path: Path, limit: int = None) -> pd.DataFrame:
@@ -115,6 +182,77 @@ def determine_if_translation_needed(language: str, abstract_text: str) -> bool:
             return iso_code != 'en'
 
 
+# ============================
+# CHUNKING HELPERS
+# ============================
+
+def chunk_for_translation(text: str, max_chunk_size: int = 4500, overlap: int = 200) -> List[str]:
+    """
+    Split text into chunks for translation, respecting Google Translate's 5000 char limit.
+    Uses conservative 4500 char limit with overlap to maintain context.
+    """
+    chunker = TextChunker(chunk_size=max_chunk_size, overlap=overlap)
+    return chunker.chunk_text(text)
+
+
+def chunk_for_embedding(text: str, model: str) -> List[str]:
+    """
+    Split text into chunks appropriate for the embedding model's context limit.
+    Uses adaptive chunk sizes: all-minilm (300/30), nomic (2000/200).
+    """
+    if model == 'all-minilm':
+        chunk_size, overlap = 300, 30
+    elif model == 'nomic-embed-text':
+        chunk_size, overlap = 2000, 200
+    else:
+        chunk_size, overlap = 2000, 200  # default
+
+    chunker = TextChunker(chunk_size=chunk_size, overlap=overlap)
+    chunks = chunker.chunk_text(text)
+    # Filter out very short chunks (< 50 chars) which add noise
+    return [c for c in chunks if len(c) >= 50]
+
+
+def translate_chunks(chunks: List[str], translator: TextTranslator, src_lang: str = None) -> str:
+    """
+    Translate multiple text chunks and concatenate them.
+    Returns the full translated text.
+    """
+    translated_chunks = []
+    for i, chunk in enumerate(chunks):
+        translated = translator.translate(chunk, force=True, source_lang=src_lang)
+        if translated is None or translated == chunk:
+            logger.warning(f"Translation may have failed for chunk {i}, using original")
+            translated_chunks.append(chunk)
+        else:
+            translated_chunks.append(translated)
+    return ' '.join(translated_chunks)
+
+
+def embed_and_average(chunks: List[str], embed_client: EmbeddingClient) -> np.ndarray:
+    """
+    Generate embeddings for each chunk and return the average (normalized) embedding.
+    Chunks are normalized before averaging to produce a unit vector.
+    """
+    if not chunks:
+        raise ValueError("No chunks to embed")
+
+    embeddings = []
+    for chunk in chunks:
+        emb = embed_client.generate_embedding(chunk)
+        if emb is None:
+            raise ValueError(f"Failed to generate embedding for chunk")
+        embeddings.append(np.array(emb))
+
+    # Average embeddings and re-normalize to unit length
+    avg_embedding = np.mean(embeddings, axis=0)
+    norm = np.linalg.norm(avg_embedding)
+    if norm > 0:
+        avg_embedding = avg_embedding / norm
+
+    return avg_embedding.tolist()
+
+
 def process_abstract_embedding(
     record_id: str,
     abstract: str,
@@ -138,28 +276,52 @@ def process_abstract_embedding(
 
         # Determine if translation needed
         needs_translation = determine_if_translation_needed(language, abstract)
+        abstract_text = str(abstract)
 
+        # ======================
+        # TRANSLATION (with chunking if needed)
+        # ======================
         if needs_translation:
-            # Use CSV language as source hint to improve translation accuracy
             src_lang_code = language_to_iso_code(language)
-            translated = translator.translate(str(abstract), force=True, source_lang=src_lang_code)
-            if translated is None or translated == abstract:
-                logger.warning(f"Translation may have failed for {record_id}, using original")
-                text_to_embed = str(abstract)
-                was_translated = False
-            else:
-                text_to_embed = translated
+
+            # Check if abstract is too long for single translation (>4500 chars)
+            if len(abstract_text) > 4500:
+                logger.info(f"Abstract {record_id} is long ({len(abstract_text)} chars), chunking for translation")
+                chunks = chunk_for_translation(abstract_text)
+                logger.debug(f"Translated in {len(chunks)} chunks")
+                text_to_embed = translate_chunks(chunks, translator, src_lang_code)
                 was_translated = True
+            else:
+                translated = translator.translate(abstract_text, force=True, source_lang=src_lang_code)
+                if translated is None or translated == abstract_text:
+                    logger.warning(f"Translation may have failed for {record_id}, using original")
+                    text_to_embed = abstract_text
+                    was_translated = False
+                else:
+                    text_to_embed = translated
+                    was_translated = True
         else:
-            text_to_embed = str(abstract)
+            text_to_embed = abstract_text
             was_translated = False
 
-        # Generate embedding ( abstracts are short, no chunking needed)
-        embedding = embed_client.generate_embedding(text_to_embed)
-        if embedding is None:
-            logger.error(f"Embedding generation failed for {record_id}")
-            storage.mark_failed(record_id, error="Embedding generation failed")
-            return False
+        # ======================
+        # EMBEDDING (with chunking if needed)
+        # ======================
+        model = embed_client.model
+        # Check if text is too long for model context (approx 2000 chars for all-minilm safety)
+        max_safe_length = 2000 if model == 'all-minilm' else 5000
+
+        if len(text_to_embed) > max_safe_length:
+            logger.info(f"Text for {record_id} is long ({len(text_to_embed)} chars), chunking for embedding")
+            chunks = chunk_for_embedding(text_to_embed, model)
+            logger.debug(f"Embedded in {len(chunks)} chunks")
+            embedding = embed_and_average(chunks, embed_client)
+        else:
+            embedding = embed_client.generate_embedding(text_to_embed)
+            if embedding is None:
+                logger.error(f"Embedding generation failed for {record_id}")
+                storage.mark_failed(record_id, error="Embedding generation failed")
+                return False
 
         # Store embedding with metadata
         storage.append_embedding(
