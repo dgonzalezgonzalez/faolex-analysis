@@ -18,8 +18,12 @@ def main():
     df = df[valid_year_mask].copy()
     df['year'] = df['year_str'].astype(int)
     df = df.drop(columns=['year_str'])
-    dropped_count = (~valid_year_mask).sum()
-    print(f"Using {len(df)} policies with valid dates (dropped {dropped_count} with malformed dates)")
+    # Also filter out implausible years (<1900 or >2025) which are likely data errors
+    year_range_mask = (df['year'] >= 1900) & (df['year'] <= 2025)
+    dropped_range = (~year_range_mask).sum()
+    df = df[year_range_mask].copy()
+    dropped_total = (~valid_year_mask).sum() + dropped_range
+    print(f"Using {len(df)} policies with valid dates (dropped {dropped_total} with malformed or implausible dates)")
 
     # Define categories
     categories = {

@@ -25,8 +25,13 @@ dir.create(output_dir, showWarnings = FALSE)
 # ============================
 df <- read.csv(input_file, stringsAsFactors = FALSE)
 
-# Extract year from date_original (DD-MM-YYYY)
-df$year <- as.numeric(substr(df$date_original, nchar(df$date_original)-3, nchar(df$date_original)))
+# Extract year from date_original using robust method (like Python script)
+# Keep only last 4 characters and check if they are all digits
+df$year_str <- substr(df$date_original, nchar(df$date_original)-3, nchar(df$date_original))
+valid_year_mask <- grepl("^\\d{4}$", df$year_str)
+df <- df[valid_year_mask, ]
+df$year <- as.integer(df$year_str)
+df <- df %>% filter(year >= 1900 & year <= 2025)
 
 # Aggregate by country
 country_data <- df %>%
@@ -51,18 +56,18 @@ if (is.null(world$iso3)) world$iso3 <- countrycode(world$name, "country.name", "
 # ============================
 make_map <- function(data, value_col, fill_name) {
   map_df <- world %>% left_join(data, by = "iso3")
-  abs_max <- max(abs(data[[value_col]]), na.rm = TRUE)
-  limits <- c(-abs_max, abs_max)
 
+  # Use diverging color scale centered at 0 with full cosine similarity range
+  # This captures both positive and negative alignments and shows more variation
   ggplot(map_df) +
     geom_sf(aes(fill = .data[[value_col]]), color = "gray70", linewidth = 0.1) +
     scale_fill_gradient2(
       name = fill_name,
-      low = "#d73027",
-      mid = "#fcfbfd",
-      high = "#4575b4",
+      low = "#b2182b",     # Dark red (negative/semantic opposition)
+      mid = "#f7f7f7",     # Light gray/white (neutral)
+      high = "#2166ac",    # Dark blue (positive/strong match)
       midpoint = 0,
-      limits = limits,
+      limits = c(-1, 1),   # Full cosine similarity range
       labels = scales::number_format(accuracy = 0.01)
     ) +
     theme_minimal() +
