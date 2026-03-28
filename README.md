@@ -122,6 +122,8 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
 
 ## Setup
 
+### Python Dependencies
+
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
@@ -130,6 +132,55 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+**Python packages required** (from `requirements.txt`):
+- numpy==2.4.3
+- pandas==3.0.1
+- python-dateutil==2.9.0.post0
+- six==1.17.0
+- beautifulsoup4==4.14.3
+- ollama==0.6.1 (for local embedding model)
+- PyPDF2==3.0.1
+- requests==2.33.0
+- tqdm==4.67.3
+- deep-translator==1.11.4
+- langdetect==1.0.9
+- plotly==6.0.1
+
+### R Dependencies
+
+The R script requires the following packages, which can be installed from CRAN:
+
+```R
+# Install required R packages
+install.packages(c("ggplot2", "sf", "rnaturalearth", "countrycode", "dplyr", "cowplot"))
+```
+
+**Note**: The `sf` package requires system dependencies for spatial data handling. On macOS, you may need to install GDAL, GEOS, and PROJ via Homebrew:
+
+```bash
+brew install gdal geos proj
+```
+
+On Ubuntu/Debian:
+```bash
+sudo apt-get install gdal-bin libgdal-dev libgeos-dev libproj-dev
+```
+
+On Windows, the `sf` package typically installs with precompiled binaries via `install.packages()`.
+
+### Optional: Ollama Setup
+
+The embedding pipeline uses Ollama for generating vector embeddings. Install Ollama separately:
+
+1. Download from [ollama.ai](https://ollama.ai)
+2. Pull the embedding model(s):
+   ```bash
+   ollama pull all-minilm  # Default model (384-dimensional)
+   # or
+   ollama pull nomic-embed-text  # Alternative (768-dimensional)
+   ```
+3. Ensure Ollama is running before executing the embedding scripts.
 
 ## Usage
 
@@ -273,3 +324,9 @@ Source: [FAOLEX - Food and Agriculture Organization of the United Nations](http:
 ## Contributing
 
 This is a research/analysis project. For questions or suggestions, please open an issue.
+
+---
+
+### Co-Creation
+
+This project was co-created with **Claude Code** using **Step 3.5 Flash** (StepFun's AI model). The interactive development environment assisted with code generation, debugging, documentation, and analysis throughout the project lifecycle.
