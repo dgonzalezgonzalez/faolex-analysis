@@ -252,6 +252,33 @@ The project now includes:
 - **Master orchestrator**: Single entry point (`main.py`) for full pipeline (Python + R)
 - **Clean intermediate file organization**: All CSV temporaries stored in `data/temp/`
 
+---
+
+## Full Dataset Run Summary
+
+**Completed**: March 28, 2025
+
+| Metric | Value |
+|--------|-------|
+| **Policies embedded** | 39,491 |
+| **Total dataset** | 40,256 records (excluded ~750 with missing/short abstracts) |
+| **Embedding runtime** | ~24 hours |
+| **Machine** | macOS 24.5.0 (Darwin) on MacBook Air (Intel x86_64) |
+| **Embedding model** | all-minilm (384-dimensional) |
+| **Translation** | Google Translate via deep-translator (cached) |
+| **Chunking** | Translation: >4500 chars; Embedding: >2000 chars for all-minilm |
+
+**Data quality notes**:
+- 7 policies had malformed dates (e.g., "????", "196?") and were excluded from time-series analysis
+- All other analyses use the full 39,491 policies with valid dates
+
+**Pipeline improvements**:
+- Robust error handling for malformed dates in `generate_trends.py` and `generate_descriptive_tables.py`
+- CSV-only data format (removed duplicate `.dta` file)
+- Smart chunking ensures all abstracts embed successfully regardless of length
+
+All outputs are generated and committed to the repository.
+
 ## Suggested Workflow
 
 1. **Initial test**: `python3 main.py --limit 10` - Verify everything works on small sample

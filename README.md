@@ -22,6 +22,35 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Static world maps (R) and interactive animated HTML map (Python/Plotly)
 - LaTeX descriptive statistics tables
 
+---
+
+## Full Dataset Results
+
+**Final Full Run** (completed Mar 28, 2025):
+- **Policies embedded**: 39,491 (from 40,256 total; excluded those with missing/short abstracts)
+- **Total embedding time**: ~24 hours
+- **Machine**: macOS 24.5.0 (Darwin) on MacBook Air (Intel x86_64)
+- **Embedding model**: all-minilm (384-dimensional)
+- **Translation cache**: leveraged Google Translate with caching
+- **Data quality**: 7 policies had malformed dates (???? or 196?) and were excluded from time-series analysis
+
+**All analysis outputs generated**:
+- `data/analysis_dataset.csv` - Complete merged dataset with embeddings, metadata, and strategy scores (39,491 records)
+- `output/descriptive_statistics.tex` - LaTeX tables with summary statistics and top/bottom policies
+- `output/strategy_*_trends.{pdf,png}` - Time trend graphs for all three strategies
+- `output/strategy_*_map.{pdf,png}` - Static world maps by country
+- `output/interactive_strategy_map.html` - Animated interactive world map with time slider
+
+---
+
+## Machine & Runtime Information
+
+**Hardware**: MacBook Air (Intel)
+**OS**: macOS 14.5.0 (Darwin 24.5.0)
+**Python**: 3.13 (virtual environment)
+**Ollama**: all-minilm model (local)
+**Total wall-clock time** (full pipeline): ~24-25 hours (embedding) + ~30 minutes (analysis)
+
 **Classification Results**:
 - Supply-side policies: 27,049 (67.2%)
 - Demand-side policies: 8,369 (20.8%)

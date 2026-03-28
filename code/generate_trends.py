@@ -11,8 +11,15 @@ from pathlib import Path
 def main():
     # Load analysis dataset (CSV format)
     df = pd.read_csv('data/analysis_dataset.csv')
-    # Extract year
-    df['year'] = df['date_original'].str[-4:].astype(int)
+    # Extract year - handle malformed dates (e.g., '????', '196?', NaN)
+    # Only keep rows where the last 4 characters are digits
+    df['year_str'] = df['date_original'].str[-4:]
+    valid_year_mask = df['year_str'].str.isdigit()
+    df = df[valid_year_mask].copy()
+    df['year'] = df['year_str'].astype(int)
+    df = df.drop(columns=['year_str'])
+    dropped_count = (~valid_year_mask).sum()
+    print(f"Using {len(df)} policies with valid dates (dropped {dropped_count} with malformed dates)")
 
     # Define categories
     categories = {

@@ -39,9 +39,14 @@ def main():
     df['title_latex'] = df['Title'].apply(latex_escape)
     df['country_latex'] = df['country'].apply(latex_escape)
 
-    # Extract year from date
-    df['year'] = df['date_original'].str[-4:].astype(float)
-    df['year'] = df['year'].astype(int)
+    # Extract year from date - handle malformed dates (e.g., '????', '196?', NaN)
+    df['year_str'] = df['date_original'].str[-4:]
+    valid_year_mask = df['year_str'].str.isdigit()
+    df = df[valid_year_mask].copy()
+    df['year'] = df['year_str'].astype(int)
+    df = df.drop(columns=['year_str'])
+    dropped_count = (~valid_year_mask).sum()
+    print(f"Using {len(df)} policies with valid dates (dropped {dropped_count} with malformed dates)")
 
     output_file = Path('output/descriptive_statistics.tex')
 
