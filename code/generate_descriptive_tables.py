@@ -31,8 +31,8 @@ def latex_escape(text):
     return text
 
 def main():
-    # Load the analysis dataset
-    df = pd.read_stata('data/analysis_dataset.dta')
+    # Load the analysis dataset (CSV format)
+    df = pd.read_csv('data/analysis_dataset.csv')
     print(f"Loaded {len(df)} policies")
 
     # Prepare LaTeX-escaped title and country

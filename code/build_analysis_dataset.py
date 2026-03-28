@@ -102,15 +102,10 @@ def main():
     ordered_cols = ['Record Id'] + strategy_cols + [c for c in base_cols if c != 'Record Id']
     analysis_df = analysis_df[ordered_cols]
 
-    # Save as CSV
+    # Save as CSV (primary format)
     analysis_csv = Path('data/analysis_dataset.csv')
     analysis_df.to_csv(analysis_csv, index=False)
     print(f"Saved CSV: {analysis_csv}")
-
-    # Save as Stata DTA
-    analysis_dta = Path('data/analysis_dataset.dta')
-    analysis_df.to_stata(analysis_dta, write_index=False, version=118)
-    print(f"Saved Stata dataset: {analysis_dta}")
 
     print("\n✅ Analysis dataset built. Ready for visualization.")
     print(f"   Total policies: {len(analysis_df)}")

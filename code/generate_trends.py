@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 def main():
-    # Load analysis dataset
-    df = pd.read_stata('data/analysis_dataset.dta')
+    # Load analysis dataset (CSV format)
+    df = pd.read_csv('data/analysis_dataset.csv')
     # Extract year
     df['year'] = df['date_original'].str[-4:].astype(int)
 

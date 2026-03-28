@@ -87,7 +87,12 @@
       "Bash(python3 -c \":*)",
       "Bash(sed -n '76,116p' README.md)",
       "Read(//tmp/**)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(TaskStop --task_id b5mvdox20)",
+      "Bash(kill:*)",
+      "Bash(ps:*)",
+      "Bash(tail -30 /private/tmp/claude-501/*/tasks/*.output)",
+      "Bash(find /private/tmp/claude-501 -name *.output -type f -exec ls -lt {} +)"
     ]
   }
 }
