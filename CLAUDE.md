@@ -118,7 +118,61 @@ The `code/compute_similarities.py` script computes cosine similarity between pol
 python3 code/compute_similarities.py
 ```
 
-### 4. Interactive Time-Series World Map
+### 4. Subgroup Similarity Maps
+
+New R script (`code/generate_subgroup_similarity_maps.R`) creates static world maps for demand-side and supply-side policy subgroups separately.
+
+**Outputs** (12 files: 6 strategies×categories × 2 formats):
+- `output/strategy_sus_demand_map.pdf/png`
+- `output/strategy_sus_supply_map.pdf/png`
+- `output/strategy_fs_demand_map.pdf/png`
+- `output/strategy_fs_supply_map.pdf/png`
+- `output/strategy_nut_demand_map.pdf/png`
+- `output/strategy_nut_supply_map.pdf/png`
+
+**Usage**:
+```bash
+Rscript --vanilla code/generate_subgroup_similarity_maps.R
+```
+
+Maps use the same fixed color scale (0.061–0.467) as the all-policies maps for comparability.
+
+### 5. Policy Count Visualizations
+
+New visualizations based on raw policy counts rather than similarity scores.
+
+**Time-trend graph** (`code/generate_policy_counts_trends.py`):
+- Shows number of policies enacted each year for All, Demand-side, and Supply-side
+- Expanded time window from earliest valid policy (1804) to 2025
+- Output: `output/policy_counts_trends.pdf` and `.png`
+
+**Usage**:
+```bash
+python3 code/generate_policy_counts_trends.py
+```
+
+**Static world maps** (`code/generate_policy_count_maps.R`):
+- Shows total policy counts by country (summed over 1992–2025)
+- Three maps: total policies, demand-side only, supply-side only
+- Output: `output/policy_counts_total_map.pdf/png`, `output/policy_counts_demand_map.pdf/png`, `output/policy_counts_supply_map.pdf/png`
+
+**Usage**:
+```bash
+Rscript --vanilla code/generate_policy_count_maps.R
+```
+
+**Interactive cumulative policy map** (`code/generate_interactive_policy_counts_map.py`):
+- Animated world map showing cumulative number of policies by country over time (1992–2025)
+- Each frame shows total policies enacted up to that year
+- Hover tooltips display country, year, and cumulative count
+- Output: `output/interactive_policy_counts_map.html`
+
+**Usage**:
+```bash
+python3 code/generate_interactive_policy_counts_map.py
+```
+
+### 6. Interactive Time-Series World Map
 
 The `code/generate_interactive_map.py` script creates an animated HTML world map from the time series data.
 
