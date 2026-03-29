@@ -21,6 +21,8 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - Time-trend visualizations (Python/matplotlib) showing similarity evolution by policy type
 - Static world maps (R) and interactive animated HTML map (Python/Plotly)
 - LaTeX descriptive statistics tables
+- **Subgroup similarity maps**: Static world maps for demand-side and supply-side policies separately (6 maps)
+- **Policy count visualizations**: Time-trend graph and country maps showing raw policy counts
 
 ---
 
@@ -39,7 +41,18 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - `output/descriptive_statistics.tex` - LaTeX tables with summary statistics and top/bottom policies
 - `output/strategy_*_trends.{pdf,png}` - Time trend graphs for all three strategies (1992–2025)
 - `output/strategy_*_map.{pdf,png}` - Static world maps by country (unified sequential color scale, 0.061–0.467)
+- `output/strategy_sus_demand_map.{pdf,png}` - Sustainability similarity for demand-side policies only
+- `output/strategy_sus_supply_map.{pdf,png}` - Sustainability similarity for supply-side policies only
+- `output/strategy_fs_demand_map.{pdf,png}` - Food Systems similarity for demand-side policies only
+- `output/strategy_fs_supply_map.{pdf,png}` - Food Systems similarity for supply-side policies only
+- `output/strategy_nut_demand_map.{pdf,png}` - Nutrition similarity for demand-side policies only
+- `output/strategy_nut_supply_map.{pdf,png}` - Nutrition similarity for supply-side policies only
+- `output/policy_counts_trends.{pdf,png}` - Time-trend graph of number of policies per year (1804–2025)
+- `output/policy_counts_total_map.{pdf,png}` - Total policy count by country (1992–2025)
+- `output/policy_counts_demand_map.{pdf,png}` - Demand-side policy count by country (1992–2025)
+- `output/policy_counts_supply_map.{pdf,png}` - Supply-side policy count by country (1992–2025)
 - `output/interactive_strategy_map.html` - Animated interactive world map with time slider (1992–2025, sequential Viridis palette)
+- `output/interactive_policy_counts_map.html` - Animated interactive world map showing cumulative policy counts by country over time (1992–2025)
 
 ---
 
@@ -127,10 +140,14 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
 │   ├── compute_similarities.py   # Strategy query similarity computation
 │   ├── build_analysis_dataset.py # Build analysis dataset from embeddings + metadata
 │   ├── generate_descriptive_tables.py  # Generate LaTeX tables
-│   ├── generate_interactive_map.py    # Generate animated HTML world map
+│   ├── generate_interactive_map.py    # Generate animated HTML world map (strategy similarities)
+│   ├── generate_interactive_policy_counts_map.py  # Generate animated HTML world map (cumulative policy counts)
 │   ├── generate_timeseries.py    # Generate time-series data (for R script)
 │   ├── world_similarity_map.R    # Generate static world maps + intermediate CSV
 │   ├── generate_trends.py        # Generate time-trend graphs
+│   ├── generate_policy_counts_trends.py  # Generate policy count time-trend graph
+│   ├── generate_subgroup_similarity_maps.R  # Generate subgroup similarity maps (demand/supply)
+│   ├── generate_policy_count_maps.R  # Generate policy count country maps
 │   └── strategy_similarity_trends.do  # (Legacy) Stata script for time-trend plots
 └── output/                       # Generated figures and reports
     ├── descriptive_statistics.tex
@@ -146,6 +163,26 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
     ├── strategy_fs_map.pdf
     ├── strategy_nut_map.png
     ├── strategy_nut_map.pdf
+    ├── strategy_sus_demand_map.png
+    ├── strategy_sus_demand_map.pdf
+    ├── strategy_sus_supply_map.png
+    ├── strategy_sus_supply_map.pdf
+    ├── strategy_fs_demand_map.png
+    ├── strategy_fs_demand_map.pdf
+    ├── strategy_fs_supply_map.png
+    ├── strategy_fs_supply_map.pdf
+    ├── strategy_nut_demand_map.png
+    ├── strategy_nut_demand_map.pdf
+    ├── strategy_nut_supply_map.png
+    ├── strategy_nut_supply_map.pdf
+    ├── policy_counts_trends.png
+    ├── policy_counts_trends.pdf
+    ├── policy_counts_total_map.png
+    ├── policy_counts_total_map.pdf
+    ├── policy_counts_demand_map.png
+    ├── policy_counts_demand_map.pdf
+    ├── policy_counts_supply_map.png
+    ├── policy_counts_supply_map.pdf
     └── interactive_strategy_map.html  # Animated world map with slider
 ```
 
@@ -263,6 +300,16 @@ Output figures (PNG and PDF) are saved to `output/`:
 - `strategy_fs_trends.*` - Food systems strategy frameworks
 - `strategy_nut_trends.*` - Nutrition/public health nutrition strategies
 
+### Policy Count Time-Trend (Python)
+The Python script (`code/generate_policy_counts_trends.py`) creates a line graph showing the number of policies enacted each year for all policies, demand-side, and supply-side categories. The time window extends to the earliest valid policy in the dataset (1804) rather than the 1992 cutoff used for strategy similarity visualizations.
+
+```bash
+python3 code/generate_policy_counts_trends.py
+```
+
+Output:
+- `output/policy_counts_trends.pdf` and `output/policy_counts_trends.png`
+
 ### World Map Visualization (R)
 The R script (`code/world_similarity_map.R`) creates:
 
@@ -277,6 +324,37 @@ The R script (`code/world_similarity_map.R`) creates:
 Run:
 ```bash
 Rscript --vanilla code/world_similarity_map.R
+```
+
+### Subgroup Similarity Maps (R)
+The R script (`code/generate_subgroup_similarity_maps.R`) creates **six static maps** showing average cosine similarity for demand-side and supply-side policy subgroups separately, for each of the three strategy dimensions.
+
+**Outputs**:
+- `output/strategy_sus_demand_map.pdf/png` - Sustainability similarity (demand-side only)
+- `output/strategy_sus_supply_map.pdf/png` - Sustainability similarity (supply-side only)
+- `output/strategy_fs_demand_map.pdf/png` - Food Systems similarity (demand-side only)
+- `output/strategy_fs_supply_map.pdf/png` - Food Systems similarity (supply-side only)
+- `output/strategy_nut_demand_map.pdf/png` - Nutrition similarity (demand-side only)
+- `output/strategy_nut_supply_map.pdf/png` - Nutrition similarity (supply-side only)
+
+Maps use the same fixed color scale (0.061–0.467) as the all-policies maps for comparability.
+
+Run:
+```bash
+Rscript --vanilla code/generate_subgroup_similarity_maps.R
+```
+
+### Policy Count Maps (R)
+The R script (`code/generate_policy_count_maps.R`) creates **three static maps** showing the total number of policies by country (summed over 1992–2025). These maps use a data-driven sequential color scale (5th–95th percentiles) to handle skew.
+
+**Outputs**:
+- `output/policy_counts_total_map.pdf/png` - Total policies from all countries
+- `output/policy_counts_demand_map.pdf/png` - Demand-side policies only
+- `output/policy_counts_supply_map.pdf/png` - Supply-side policies only
+
+Run:
+```bash
+Rscript --vanilla code/generate_policy_count_maps.R
 ```
 
 ### Interactive Animated World Map (Python)
@@ -297,6 +375,22 @@ The resulting HTML file (`output/interactive_strategy_map.html`) includes:
 - Fully self-contained (loads Plotly from CDN)
 
 Open the HTML file in any modern web browser to interact.
+
+### Interactive Cumulative Policy Count Map (Python)
+The Python script (`code/generate_interactive_policy_counts_map.py`) creates an animated HTML map showing the cumulative number of policies enacted by each country over time (1992–2025). Each frame shows the total accumulated policies up to that year.
+
+```bash
+python3 code/generate_interactive_policy_counts_map.py
+```
+
+**Output**: `output/interactive_policy_counts_map.html`
+
+The map includes:
+- Single choropleth showing cumulative policy counts
+- Slider with play/pause controls (1992–2025)
+- Hover tooltips displaying country, year, and cumulative count
+- Color scale adapts to the data distribution (5th–95th percentiles)
+- Fully self-contained (Plotly from CDN, no title as per current style)
 
 ### Descriptive Statistics (Python → LaTeX)
 Generate LaTeX tables with summary statistics and top/bottom policy rankings:

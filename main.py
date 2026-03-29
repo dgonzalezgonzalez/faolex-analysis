@@ -163,10 +163,21 @@ def main():
     )
 
     # Check analysis outputs (must have both maps and LaTeX)
+    # Check if all new outputs exist as well
+    new_outputs = [
+        output_dir / 'policy_counts_trends.pdf',
+        output_dir / 'policy_counts_total_map.pdf',
+        output_dir / 'strategy_sus_demand_map.pdf',
+        output_dir / 'strategy_fs_demand_map.pdf',
+        output_dir / 'strategy_nut_demand_map.pdf',
+        output_dir / 'interactive_policy_counts_map.html'
+    ]
+    all_new_exist = all(f.exists() for f in new_outputs)
     analysis_needed = args.force or not (
         check_file_exists(output_dir / 'descriptive_statistics.tex', 'descriptive statistics LaTeX') and
         check_file_exists(output_dir / 'world_similarity_map.pdf', 'world similarity map') and
-        check_file_exists(output_dir / 'strategy_sus_trends.pdf', 'trend graphs')
+        check_file_exists(output_dir / 'strategy_sus_trends.pdf', 'trend graphs') and
+        all_new_exist
     )
 
     # ===========================
@@ -291,6 +302,51 @@ def main():
             logger.info("✅ Interactive HTML map generated")
         else:
             logger.error("❌ Analysis: interactive map generation failed")
+
+        # 4e: Generate policy count trends
+        if run_command(
+            [sys.executable, 'code/generate_policy_counts_trends.py'],
+            description="Generate policy count time-trend graph"
+        ):
+            logger.info("✅ Policy count trends generated")
+        else:
+            logger.error("❌ Analysis: policy count trends failed")
+
+        # 4f: Generate subgroup similarity maps (R)
+        logger.info("Checking for R to generate subgroup similarity maps...")
+        r_check = subprocess.run(['which', 'Rscript'], capture_output=True)
+        if r_check.returncode == 0:
+            if run_command(
+                ['Rscript', '--vanilla', 'code/generate_subgroup_similarity_maps.R'],
+                description="Generate subgroup similarity maps"
+            ):
+                logger.info("✅ Subgroup similarity maps generated")
+            else:
+                logger.error("❌ Analysis: subgroup similarity maps failed")
+        else:
+            logger.warning("⚠️  Rscript not found, skipping subgroup similarity maps")
+
+        # 4g: Generate policy count maps (R)
+        logger.info("Checking for R to generate policy count maps...")
+        if r_check.returncode == 0:
+            if run_command(
+                ['Rscript', '--vanilla', 'code/generate_policy_count_maps.R'],
+                description="Generate policy count maps"
+            ):
+                logger.info("✅ Policy count maps generated")
+            else:
+                logger.error("❌ Analysis: policy count maps failed")
+        else:
+            logger.warning("⚠️  Rscript not found, skipping policy count maps")
+
+        # 4h: Generate interactive policy counts map
+        if run_command(
+            [sys.executable, 'code/generate_interactive_policy_counts_map.py'],
+            description="Generate interactive policy counts map"
+        ):
+            logger.info("✅ Interactive policy counts map generated")
+        else:
+            logger.error("❌ Analysis: interactive policy counts map failed")
     else:
         logger.info("\n>>> Step 4: Analysis & Visualization [SKIPPED] (outputs exist) <<<")
 
@@ -304,14 +360,19 @@ def main():
     logger.info(f"  • Policy embeddings: {data_dir / 'embeddings' / 'embeddings.jsonl'}")
     logger.info(f"  • Similarity scores: {data_dir / 'strategy_similarities.csv'}")
     logger.info(f"  • Descriptives LaTeX: {output_dir / 'descriptive_statistics.tex'}")
-    logger.info(f"  • Time trends: {output_dir / 'strategy_*_trends.*'}")
-    logger.info(f"  • World maps: {output_dir / 'world_similarity_map.*'}")
-    logger.info(f"  • Interactive map: {output_dir / 'interactive_strategy_map.html'}")
+    logger.info(f"  • Strategy time trends: {output_dir / 'strategy_*_trends.*'}")
+    logger.info(f"  • World maps: {output_dir / 'strategy_*_map.*'}")
+    logger.info(f"  • Subgroup similarity maps: {output_dir / 'strategy_*_demand_map.*', output_dir / 'strategy_*_supply_map.*'}")
+    logger.info(f"  • Policy count trends: {output_dir / 'policy_counts_trends.*'}")
+    logger.info(f"  • Policy count maps: {output_dir / 'policy_counts_*_map.*'}")
+    logger.info(f"  • Interactive strategy map: {output_dir / 'interactive_strategy_map.html'}")
+    logger.info(f"  • Interactive policy counts map: {output_dir / 'interactive_policy_counts_map.html'}")
     logger.info("\nTo view results:")
     logger.info(f"  pd {'data/strategy_similarities.csv'}")
     logger.info(f"  cat {'output/descriptive_statistics.tex'}")
     logger.info(f"  open {'output/strategy_*_trends.pdf'}")
     logger.info(f"  open {'output/interactive_strategy_map.html'} (in browser)")
+    logger.info(f"  open {'output/interactive_policy_counts_map.html'} (in browser)")
     logger.info("=" * 60)
 
     return 0
