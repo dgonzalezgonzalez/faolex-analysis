@@ -38,6 +38,10 @@ def generate_interactive_map(input_path: Path, output_path: Path):
 
     logger.info(f"Data loaded: {len(df)} records, {df.country.nunique()} countries, years {df.year.min()}-{df.year.max()}")
 
+    # Filter to optimal year window (1992-2025)
+    df = df[(df['year'] >= 1992) & (df['year'] <= 2025)].copy()
+    logger.info(f"Filtered to 1992-2025: {len(df)} records, years {df.year.min()}-{df.year.max()}")
+
     # Melt for long format (one column for strategy, one for score)
     df_long = df.melt(
         id_vars=['country', 'year', 'iso3'],
@@ -55,6 +59,7 @@ def generate_interactive_map(input_path: Path, output_path: Path):
     df_long['strategy_label'] = df_long['strategy'].map(strategy_labels)
 
     # Create animated choropleth
+    # Use sequential color scale with data-appropriate range (5th-95th percentile: 0.061-0.467)
     fig = px.choropleth(
         df_long,
         locations='iso3',
@@ -67,10 +72,10 @@ def generate_interactive_map(input_path: Path, output_path: Path):
         },
         animation_frame='year',
         animation_group='iso3',
-        color_continuous_scale='RdBu',
-        range_color=(-1, 1),
+        color_continuous_scale='Viridis',  # Perceptually uniform sequential
+        range_color=(0.061, 0.467),
         scope='world',
-        title='Strategy Similarity Scores Over Time (1965-1994)',
+        title='Strategy Similarity Scores Over Time (1992-2025)',
         facet_col='strategy_label',
         facet_col_wrap=3,
         labels={

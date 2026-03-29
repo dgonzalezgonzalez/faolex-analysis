@@ -37,9 +37,9 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 **All analysis outputs generated**:
 - `data/analysis_dataset.csv` - Complete merged dataset with embeddings, metadata, and strategy scores (39,491 records)
 - `output/descriptive_statistics.tex` - LaTeX tables with summary statistics and top/bottom policies
-- `output/strategy_*_trends.{pdf,png}` - Time trend graphs for all three strategies
-- `output/strategy_*_map.{pdf,png}` - Static world maps by country
-- `output/interactive_strategy_map.html` - Animated interactive world map with time slider
+- `output/strategy_*_trends.{pdf,png}` - Time trend graphs for all three strategies (1992–2025)
+- `output/strategy_*_map.{pdf,png}` - Static world maps by country (unified sequential color scale, 0.061–0.467)
+- `output/interactive_strategy_map.html` - Animated interactive world map with time slider (1992–2025, sequential Viridis palette)
 
 ---
 
@@ -292,7 +292,7 @@ python3 code/generate_interactive_map.py --input data/custom_timeseries.csv --ou
 
 The resulting HTML file (`output/interactive_strategy_map.html`) includes:
 - Three choropleth maps (Environmental Sustainability, Food Systems, Nutrition)
-- Slider to select year (1965-1994) with Play/Pause button
+- Slider to select year (1992-2025) with Play/Pause button
 - Hover tooltips showing country name, year, strategy dimension, and similarity score
 - Fully self-contained (loads Plotly from CDN)
 

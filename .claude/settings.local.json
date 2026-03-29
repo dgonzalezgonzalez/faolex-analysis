@@ -92,7 +92,8 @@
       "Bash(kill:*)",
       "Bash(ps:*)",
       "Bash(tail -30 /private/tmp/claude-501/*/tasks/*.output)",
-      "Bash(find /private/tmp/claude-501 -name *.output -type f -exec ls -lt {} +)"
+      "Bash(find /private/tmp/claude-501 -name *.output -type f -exec ls -lt {} +)",
+      "mcp__ide__executeCode"
     ]
   }
 }

@@ -31,7 +31,8 @@ df$year_str <- substr(df$date_original, nchar(df$date_original)-3, nchar(df$date
 valid_year_mask <- grepl("^\\d{4}$", df$year_str)
 df <- df[valid_year_mask, ]
 df$year <- as.integer(df$year_str)
-df <- df %>% filter(year >= 1900 & year <= 2025)
+# Filter to optimal year window: 1992-2025 (stable coverage, recent past)
+df <- df %>% filter(year >= 1992 & year <= 2025)
 
 # Aggregate by country
 country_data <- df %>%
@@ -57,18 +58,18 @@ if (is.null(world$iso3)) world$iso3 <- countrycode(world$name, "country.name", "
 make_map <- function(data, value_col, fill_name) {
   map_df <- world %>% left_join(data, by = "iso3")
 
-  # Use diverging color scale centered at 0 with full cosine similarity range
-  # This captures both positive and negative alignments and shows more variation
+  # Use unified sequential color scale based on observed data percentiles
+  # 5th percentile across all strategies: ~0.061, 95th: ~0.467
+  # This captures the core variation across countries without distortion from extreme outliers
   ggplot(map_df) +
     geom_sf(aes(fill = .data[[value_col]]), color = "gray70", linewidth = 0.1) +
-    scale_fill_gradient2(
+    scale_fill_gradient(
       name = fill_name,
-      low = "#b2182b",     # Dark red (negative/semantic opposition)
-      mid = "#f7f7f7",     # Light gray/white (neutral)
-      high = "#2166ac",    # Dark blue (positive/strong match)
-      midpoint = 0,
-      limits = c(-1, 1),   # Full cosine similarity range
-      labels = scales::number_format(accuracy = 0.01)
+      low = "#deebf7",    # Very light blue
+      high = "#08519e",   # Dark blue
+      limits = c(0.061, 0.467),
+      labels = scales::number_format(accuracy = 0.01),
+      oob = scales::squish  # Squish out-of-bounds values to nearest limit
     ) +
     theme_minimal() +
     theme(

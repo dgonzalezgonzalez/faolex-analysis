@@ -124,7 +124,7 @@ The `code/generate_interactive_map.py` script creates an animated HTML world map
 
 **Features**:
 - Three choropleth maps (one for each strategy dimension)
-- Animated time slider (1965-1994) with play/pause controls
+- Animated time slider (1992-2025) with play/pause controls
 - Interactive hover tooltips showing country, year, and similarity scores
 - Responsive design with Plotly (uses CDN, no local dependencies)
 
@@ -251,6 +251,8 @@ The project now includes:
 - **LaTeX descriptive tables**: Automated report tables
 - **Master orchestrator**: Single entry point (`main.py`) for full pipeline (Python + R)
 - **Clean intermediate file organization**: All CSV temporaries stored in `data/temp/`
+- **Year window optimization**: Visualizations focus on **1992–2025** to exclude volatile early years with sparse data while preserving ~35 years of trends
+- **Improved color scales**: Maps use a unified sequential palette with data-driven bounds (**0.061–0.467**, based on 5th–95th percentiles) to better capture variation across countries
 
 ---
 
