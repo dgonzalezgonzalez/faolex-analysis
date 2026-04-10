@@ -23,6 +23,7 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - LaTeX descriptive statistics tables
 - **Subgroup similarity maps**: Static world maps for demand-side and supply-side policies separately (6 maps)
 - **Policy count visualizations**: Time-trend graph and country maps showing raw policy counts
+- **Unified dashboard**: Single interactive HTML file consolidating maps, trends, policy rankings, and output downloads
 
 ---
 
@@ -53,6 +54,7 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - `output/policy_counts_supply_map.{pdf,png}` - Supply-side policy count by country (1992–2025)
 - `output/interactive_strategy_map.html` - Animated interactive world map with time slider (1992–2025, sequential Viridis palette)
 - `output/interactive_policy_counts_map.html` - Animated interactive world map showing cumulative policy counts by country over time (1992–2025)
+- `output/interactive_dashboard.html` - Unified dashboard with tabs for filtering, demand-side, supply-side, policies, and environmental sustainability
 
 ---
 
@@ -114,23 +116,25 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
 
 ```
 .
-├── CLAUDE.md                      # Guidance for Claude Code
+├── CLAUDE.md                      # Repository working notes (legacy filename)
+├── AGENTS.md                      # Contributor guide for Codex and other agents
 ├── README.md                      # This file
 ├── .gitignore                     # Git ignore patterns
 ├── requirements.txt               # Python dependencies
 ├── venv/                          # Virtual environment (not committed)
+├── tests/                         # Python unittest coverage for dashboard generation
 ├── data/
 │   ├── FAOLEX_Food.csv           # Raw dataset (67.8 MB)
 │   ├── policy_categories.csv     # Demand/supply classifications
 │   ├── strategy_similarities.csv # Cosine similarity scores for strategy queries
 │   ├── strategy_similarities_with_dates.csv  # Merged dataset for Stata
 │   ├── analysis_dataset.csv      # Combined dataset for analysis (CSV)
-│   ├── analysis_dataset.dta      # Combined dataset for analysis (Stata)
 │   ├── embeddings/
 │   │   ├── embeddings.jsonl      # Policy vector embeddings (JSON Lines)
 │   │   └── manifest.json         # Processing manifest with metadata
 │   └── temp/
-│       └── world_map_time_series.csv  # Intermediate time-series data (aggregated by country-year)
+│       ├── world_map_time_series.csv  # Intermediate time-series data (aggregated by country-year)
+│       └── dashboard_asset_manifest.json  # Intermediate dashboard asset manifest
 ├── code/
 │   ├── classify_policies.py      # Policy classification
 │   ├── abstract_embedder.py      # **Primary**: Generate embeddings from abstracts (with translation)
@@ -139,7 +143,10 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
 │   ├── embedding_storage.py      # Embeddings storage & manifest management
 │   ├── compute_similarities.py   # Strategy query similarity computation
 │   ├── build_analysis_dataset.py # Build analysis dataset from embeddings + metadata
+│   ├── build_dashboard_manifest.py  # Build manifest of generated dashboard assets
+│   ├── dashboard_builder.py      # Assemble the unified dashboard HTML
 │   ├── generate_descriptive_tables.py  # Generate LaTeX tables
+│   ├── generate_dashboard.py     # Generate unified interactive HTML dashboard
 │   ├── generate_interactive_map.py    # Generate animated HTML world map (strategy similarities)
 │   ├── generate_interactive_policy_counts_map.py  # Generate animated HTML world map (cumulative policy counts)
 │   ├── generate_timeseries.py    # Generate time-series data (for R script)
@@ -183,6 +190,8 @@ Visualizations: `output/strategy_*_trends.pdf/png` showing time trends for all, 
     ├── policy_counts_demand_map.pdf
     ├── policy_counts_supply_map.png
     ├── policy_counts_supply_map.pdf
+    ├── interactive_policy_counts_map.html
+    ├── interactive_dashboard.html     # Unified dashboard with tabs and global filters
     └── interactive_strategy_map.html  # Animated world map with slider
 ```
 
@@ -392,6 +401,22 @@ The map includes:
 - Color scale adapts to the data distribution (5th–95th percentiles)
 - Fully self-contained (Plotly from CDN, no title as per current style)
 
+### Unified Interactive Dashboard (Python)
+Generate a single HTML dashboard that consolidates the main outputs into one interactive artifact:
+
+```bash
+python3 code/generate_dashboard.py
+```
+
+**Output**: `output/interactive_dashboard.html`
+
+The dashboard includes:
+- Global filters for country, year range, strategy, and category
+- Tabs for `Filtering`, `Demand Side`, `Supply Side`, `Policies`, and `Environmental Sustainability`
+- Interactive line charts and country maps rebuilt from `data/analysis_dataset.csv`
+- Embedded access to the original interactive HTML outputs
+- Download cards linking the existing PNG, PDF, HTML, and LaTeX outputs
+
 ### Descriptive Statistics (Python → LaTeX)
 Generate LaTeX tables with summary statistics and top/bottom policy rankings:
 ```bash
@@ -420,7 +445,18 @@ This single script runs all steps:
 4. Strategy similarity computation
 5. Descriptive statistics (LaTeX)
 6. World maps (R) and time-trends (Python)
-7. Interactive HTML map (Python)
+7. Interactive HTML maps (Python)
+8. Unified interactive dashboard (Python)
+
+## Testing
+
+Run the dashboard regression checks with:
+
+```bash
+venv/bin/python -m unittest discover -s tests
+```
+
+These tests cover manifest generation, payload assembly, and dashboard HTML creation.
 
 
 ## Next Steps
@@ -450,6 +486,6 @@ This is a research/analysis project. For questions or suggestions, please open a
 
 ---
 
-### Co-Creation
+### Tooling Context
 
-This project was co-created with **Claude Code** using **Step 3.5 Flash** (StepFun's AI model). The interactive development environment assisted with code generation, debugging, documentation, and analysis throughout the project lifecycle.
+The current repository workflow is maintained with **Codex** using **gpt-5.4** for planning, implementation, and documentation updates. Ollama remains part of the analysis pipeline for local policy embeddings; the note here refers to the coding assistant workflow, not the embedding model runtime.

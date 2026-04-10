@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file keeps repository working notes for agentic coding tools. The current workflow uses Codex with `gpt-5.4`; the filename remains for compatibility with older local setup conventions.
 
 ## Project Overview
 
@@ -10,6 +10,7 @@ This is a data analysis project focused on the FAOLEX (Food and Agriculture Orga
 - **Code**: `code/` - Analysis scripts: policy classification, abstract-based embedding generation, similarity analysis, visualization
 - **Data products**: `data/policy_categories.csv`, `data/embeddings/`, `data/analysis_dataset.dta`, `data/strategy_similarities.csv`, `data/temp/`
 - **Output**: `output/` - Final results: LaTeX tables, static maps, trend graphs, interactive HTML map
+- **Dashboard**: `output/interactive_dashboard.html` - Unified interactive view across the main analysis outputs
 
 ## Directory Conventions
 
@@ -340,7 +341,8 @@ All outputs are generated and committed to the repository.
 1. **Initial test**: `python3 main.py --limit 10` - Verify everything works on small sample
 2. **Check outputs**: Inspect `data/` and `output/` directories
 3. **Full run**: `python3 main.py` - Process all ~40K policies (may take significant time)
-4. **Customize**: Modify strategy queries in `code/compute_similarities.py` or add new analyses
+4. **Generate dashboard**: `python3 code/generate_dashboard.py` - Build the single-file HTML dashboard
+5. **Customize**: Modify strategy queries in `code/compute_similarities.py` or add new analyses
 
 ## Notes for Code Generation
 
@@ -358,6 +360,7 @@ All outputs are generated and committed to the repository.
 - The repository already includes README.md for documentation
 - **Note**: The original recommendation to use `output/` for transformed data was superseded by user request to keep derived data in `data/` (e.g., `data/policy_categories.csv`, `data/embeddings/`)
 - Use `main.py` as the canonical entry point for end-to-end execution
+- The current coding assistant/tooling context is Codex with `gpt-5.4`; remove stale Claude-specific wording when updating docs
 
 ## Documentation Maintenance
 

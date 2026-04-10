@@ -170,12 +170,13 @@ def main():
         output_dir / 'strategy_sus_demand_map.pdf',
         output_dir / 'strategy_fs_demand_map.pdf',
         output_dir / 'strategy_nut_demand_map.pdf',
-        output_dir / 'interactive_policy_counts_map.html'
+        output_dir / 'interactive_policy_counts_map.html',
+        output_dir / 'interactive_dashboard.html',
     ]
     all_new_exist = all(f.exists() for f in new_outputs)
     analysis_needed = args.force or not (
         check_file_exists(output_dir / 'descriptive_statistics.tex', 'descriptive statistics LaTeX') and
-        check_file_exists(output_dir / 'world_similarity_map.pdf', 'world similarity map') and
+        check_file_exists(output_dir / 'strategy_sus_map.pdf', 'world similarity map') and
         check_file_exists(output_dir / 'strategy_sus_trends.pdf', 'trend graphs') and
         all_new_exist
     )
@@ -241,7 +242,7 @@ def main():
     # STEP 2b: BUILD ANALYSIS DATASET
     # ===========================
     # After embeddings and similarities, build the analysis dataset with metadata
-    analysis_dataset_path = data_dir / 'analysis_dataset.dta'
+    analysis_dataset_path = data_dir / 'analysis_dataset.csv'
     if args.force or not analysis_dataset_path.exists():
         logger.info("\n>>> Step 2b: Building Analysis Dataset <<<")
         if run_command(
@@ -347,6 +348,15 @@ def main():
             logger.info("✅ Interactive policy counts map generated")
         else:
             logger.error("❌ Analysis: interactive policy counts map failed")
+
+        # 4i: Generate unified interactive dashboard
+        if run_command(
+            [sys.executable, 'code/generate_dashboard.py'],
+            description="Generate unified interactive dashboard"
+        ):
+            logger.info("✅ Interactive dashboard generated")
+        else:
+            logger.error("❌ Analysis: interactive dashboard generation failed")
     else:
         logger.info("\n>>> Step 4: Analysis & Visualization [SKIPPED] (outputs exist) <<<")
 
@@ -367,12 +377,14 @@ def main():
     logger.info(f"  • Policy count maps: {output_dir / 'policy_counts_*_map.*'}")
     logger.info(f"  • Interactive strategy map: {output_dir / 'interactive_strategy_map.html'}")
     logger.info(f"  • Interactive policy counts map: {output_dir / 'interactive_policy_counts_map.html'}")
+    logger.info(f"  • Interactive dashboard: {output_dir / 'interactive_dashboard.html'}")
     logger.info("\nTo view results:")
     logger.info(f"  pd {'data/strategy_similarities.csv'}")
     logger.info(f"  cat {'output/descriptive_statistics.tex'}")
     logger.info(f"  open {'output/strategy_*_trends.pdf'}")
     logger.info(f"  open {'output/interactive_strategy_map.html'} (in browser)")
     logger.info(f"  open {'output/interactive_policy_counts_map.html'} (in browser)")
+    logger.info(f"  open {'output/interactive_dashboard.html'} (in browser)")
     logger.info("=" * 60)
 
     return 0
