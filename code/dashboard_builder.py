@@ -777,7 +777,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       <div class="section-title">
         <div>
           <h2>Global Filters</h2>
-          <p>These controls drive the dashboard views and update the map, trends, and policy rankings together.</p>
+          <p>These controls drive the overview and policy views. Demand-side and supply-side tabs keep their own category focus while still respecting country, year, and strategy selections.</p>
         </div>
       </div>
       <div class="toolbar-grid">
@@ -839,12 +839,24 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
 
     <nav class="tabs">
       <button class="tab-button active" data-tab="filtering">Filtering</button>
-      <button class="tab-button" data-tab="trends">Trends</button>
+      <button class="tab-button" data-tab="demand-side">Demand Side</button>
+      <button class="tab-button" data-tab="supply-side">Supply Side</button>
       <button class="tab-button" data-tab="policies">Policies</button>
+      <button class="tab-button" data-tab="environmental-sustainability">Environmental Sustainability</button>
     </nav>
 
     <section class="tab active" id="tab-filtering">
       <div class="kpi-grid" id="overview-kpis"></div>
+      <div class="grid-two">
+        <div class="panel card">
+          <div class="section-title"><h3>Similarity trend by category</h3><p>Selected strategy across all, demand-side, and supply-side policies.</p></div>
+          <div id="overview-trend-chart" class="chart"></div>
+        </div>
+        <div class="panel card">
+          <div class="section-title"><h3>Policy count trend</h3><p>Counts by year across the same filter window.</p></div>
+          <div id="overview-counts-chart" class="chart"></div>
+        </div>
+      </div>
       <div class="grid-two">
         <div class="panel card">
           <div class="section-title"><h3>Map explorer</h3><p>Switch between similarity dimensions and policy-count views from one map.</p></div>
@@ -858,30 +870,57 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       </div>
     </section>
 
-    <section class="tab" id="tab-trends">
+    <section class="tab" id="tab-demand-side">
       <div class="grid-two">
         <div class="panel card">
-          <div class="section-title"><h3>Similarity trend by category</h3><p>Selected strategy across all, demand-side, and supply-side policies.</p></div>
-          <div id="trends-similarity-chart" class="chart"></div>
+          <div class="section-title"><h3>Demand-side similarity trends</h3><p>Three strategic dimensions over time for demand-side policies only.</p></div>
+          <div id="demand-trend-chart" class="chart"></div>
         </div>
         <div class="panel card">
-          <div class="section-title"><h3>Policy count trend</h3><p>Counts by year across the same filter window.</p></div>
-          <div id="trends-counts-chart" class="chart"></div>
+          <div class="section-title"><h3>Demand-side counts</h3><p>Demand-side policy counts over time for the current country and year filters.</p></div>
+          <div id="demand-count-chart" class="chart"></div>
         </div>
       </div>
       <div class="grid-two">
         <div class="panel card">
-          <div class="section-title"><h3>Strategic trend comparison</h3><p>All three strategic dimensions over time for the current filter window.</p></div>
-          <div id="trends-strategy-chart" class="chart"></div>
+          <div class="section-title"><h3>Demand-side country map</h3><p>Average similarity for the selected strategy within demand-side policies.</p></div>
+          <div id="demand-map-chart" class="chart short"></div>
         </div>
         <div class="panel card">
-          <div class="section-title"><h3>Top countries by current strategy</h3><p>Average country score in the filtered trend window.</p></div>
-          <div id="trends-country-bar" class="chart short"></div>
+          <div class="section-title"><h3>Demand-side original artifact previews</h3><p>Current PNG outputs that match this view.</p></div>
+          <div id="demand-previews" class="preview-grid"></div>
         </div>
       </div>
       <div class="panel card">
-        <div class="section-title"><h3>Trend-oriented downloads</h3><p>Generated trend and map outputs relevant to the current filtered view.</p></div>
-        <div id="trends-artifacts" class="artifact-grid"></div>
+        <div class="section-title"><h3>Demand-side file downloads</h3><p>Relevant generated files for this tab.</p></div>
+        <div id="demand-artifacts" class="artifact-grid"></div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-supply-side">
+      <div class="grid-two">
+        <div class="panel card">
+          <div class="section-title"><h3>Supply-side similarity trends</h3><p>Three strategic dimensions over time for supply-side policies only.</p></div>
+          <div id="supply-trend-chart" class="chart"></div>
+        </div>
+        <div class="panel card">
+          <div class="section-title"><h3>Supply-side counts</h3><p>Supply-side policy counts over time for the current country and year filters.</p></div>
+          <div id="supply-count-chart" class="chart"></div>
+        </div>
+      </div>
+      <div class="grid-two">
+        <div class="panel card">
+          <div class="section-title"><h3>Supply-side country map</h3><p>Average similarity for the selected strategy within supply-side policies.</p></div>
+          <div id="supply-map-chart" class="chart short"></div>
+        </div>
+        <div class="panel card">
+          <div class="section-title"><h3>Supply-side original artifact previews</h3><p>Current PNG outputs that match this view.</p></div>
+          <div id="supply-previews" class="preview-grid"></div>
+        </div>
+      </div>
+      <div class="panel card">
+        <div class="section-title"><h3>Supply-side file downloads</h3><p>Relevant generated files for this tab.</p></div>
+        <div id="supply-artifacts" class="artifact-grid"></div>
       </div>
     </section>
 
@@ -904,6 +943,34 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       <div class="panel card">
         <div class="section-title"><h3>Policy-oriented downloads</h3><p>Current descriptive and interactive outputs available from the pipeline.</p></div>
         <div id="policies-artifacts" class="artifact-grid"></div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-environmental-sustainability">
+      <div class="kpi-grid" id="sus-kpis"></div>
+      <div class="grid-two">
+        <div class="panel card">
+          <div class="section-title"><h3>Sustainability trends by category</h3><p>The `strategy_sus` signal across all, demand-side, and supply-side policies.</p></div>
+          <div id="sus-trend-chart" class="chart"></div>
+        </div>
+        <div class="panel card">
+          <div class="section-title"><h3>Sustainability map</h3><p>Average `strategy_sus` score by country in the filtered slice.</p></div>
+          <div id="sus-map-chart" class="chart"></div>
+        </div>
+      </div>
+      <div class="grid-two">
+        <div class="panel card">
+          <div class="section-title"><h3>Top countries by sustainability alignment</h3><p>Average country score for the selected filter window.</p></div>
+          <div id="sus-country-bar" class="chart short"></div>
+        </div>
+        <div class="panel card">
+          <div class="section-title"><h3>Top sustainability-aligned policies</h3><p>Highest `strategy_sus` values in the current filter window.</p></div>
+          <div class="scroll-table" id="sus-policies-table"></div>
+        </div>
+      </div>
+      <div class="panel card">
+        <div class="section-title"><h3>Sustainability downloads</h3><p>Existing sustainability-focused outputs from the pipeline.</p></div>
+        <div id="sus-artifacts" class="artifact-grid"></div>
       </div>
     </section>
 
@@ -1383,6 +1450,24 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       const mapMetric = mapMetricMeta(state.mapMetric);
       renderCards('overview-kpis', summary, STRATEGIES[state.strategy]);
       renderPlot(
+        'overview-trend-chart',
+        lineSeries(records, state.strategy, [
+          {{ key: 'all', label: 'All Policies' }},
+          {{ key: 'demand_side', label: 'Demand Side' }},
+          {{ key: 'supply_side', label: 'Supply Side' }}
+        ]),
+        chartLayout('Average similarity by year', {{ yaxis: {{ title: STRATEGIES[state.strategy], gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
+      );
+      renderPlot(
+        'overview-counts-chart',
+        countSeries(records, [
+          {{ key: 'all', label: 'All Policies' }},
+          {{ key: 'demand_side', label: 'Demand Side' }},
+          {{ key: 'supply_side', label: 'Supply Side' }}
+        ]),
+        chartLayout('Policy counts by year', {{ yaxis: {{ title: 'Policies', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
+      );
+      renderPlot(
         'overview-map-chart',
         mapMetric.mode === 'count'
           ? countryCountTrace(
@@ -1404,48 +1489,40 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       renderArtifacts('overview-artifacts', asset => asset.filename !== 'interactive_dashboard.pdf' && asset.filename !== 'interactive_dashboard.html');
     }}
 
-    function renderTrendsTab() {{
-      const records = filteredPolicies({{ requireYear: true }});
+    function renderSideTab(side) {{
+      const records = filteredPolicies({{ requireYear: true, categoryOverride: side }});
+      const chartPrefix = side === 'demand_side' ? 'demand' : 'supply';
       renderPlot(
-        'trends-similarity-chart',
-        lineSeries(records, state.strategy, [
-          {{ key: 'all', label: 'All Policies' }},
-          {{ key: 'demand_side', label: 'Demand Side' }},
-          {{ key: 'supply_side', label: 'Supply Side' }}
-        ]),
-        chartLayout('Average similarity by year', {{ yaxis: {{ title: STRATEGIES[state.strategy], gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
+        `${{chartPrefix}}-trend-chart`,
+        [
+          ...['strategy_sus', 'strategy_fs', 'strategy_nut'].map((strategy, index) => {{
+            const trace = lineSeries(records, strategy, [{{ key: side, label: STRATEGIES[strategy] }}])[0];
+            trace.line = {{ width: 3, color: ['#156064', '#ff7d00', '#8f2d56'][index] }};
+            trace.marker = {{ size: 5 }};
+            return trace;
+          }})
+        ],
+        chartLayout(`${{CATEGORY_LABELS[side]}} strategic trends`, {{ yaxis: {{ title: 'Average similarity', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
       );
       renderPlot(
-        'trends-counts-chart',
-        countSeries(records, [
-          {{ key: 'all', label: 'All Policies' }},
-          {{ key: 'demand_side', label: 'Demand Side' }},
-          {{ key: 'supply_side', label: 'Supply Side' }}
-        ]),
-        chartLayout('Policy counts by year', {{ yaxis: {{ title: 'Policies', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
+        `${{chartPrefix}}-count-chart`,
+        countSeries(records, [{{ key: side, label: CATEGORY_LABELS[side] }}]),
+        chartLayout(`${{CATEGORY_LABELS[side]}} policy counts`, {{ yaxis: {{ title: 'Policies', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
       );
       renderPlot(
-        'trends-strategy-chart',
-        ['strategy_sus', 'strategy_fs', 'strategy_nut'].map((strategy, index) => {{
-          const trace = lineSeries(records, strategy, [{{ key: 'all', label: STRATEGIES[strategy] }}])[0];
-          trace.line = {{ width: 3, color: ['#156064', '#ff7d00', '#8f2d56'][index] }};
-          trace.marker = {{ size: 5 }};
-          return trace;
-        }}),
-        chartLayout('Strategic trends compared', {{ yaxis: {{ title: 'Average similarity', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
-      );
-      renderPlot(
-        'trends-country-bar',
-        topCountriesBar(records, state.strategy, false),
-        chartLayout('Top countries by average selected strategy', {{
-          margin: {{ l: 180, r: 20, t: 18, b: 42 }},
-          yaxis: {{ automargin: true, gridcolor: 'rgba(213, 207, 193, 0.6)' }},
-          xaxis: {{ title: 'Average score', gridcolor: 'rgba(213, 207, 193, 0.6)' }}
+        `${{chartPrefix}}-map-chart`,
+        countryMapTrace(records, state.strategy),
+        chartLayout('', {{
+          margin: {{ l: 0, r: 0, t: 10, b: 0 }},
+          geo: {{ projection: {{ type: 'natural earth' }}, showframe: false, showcoastlines: false, bgcolor: 'rgba(0,0,0,0)' }},
+          coloraxis: {{ colorscale: 'Viridis', colorbar: {{ title: 'Avg. score' }} }}
         }})
       );
-      renderArtifacts('trends-artifacts', asset =>
-        asset.kind.includes('trend') ||
-        asset.kind.includes('map')
+      renderPreviews(`${{chartPrefix}}-previews`, state.strategy, side);
+      renderArtifacts(`${{chartPrefix}}-artifacts`, asset =>
+        asset.tabs.includes(chartPrefix + '-side') &&
+        (asset.side === side || asset.side === 'all') &&
+        (asset.strategy === null || asset.strategy === state.strategy)
       );
     }}
 
@@ -1465,6 +1542,42 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       renderArtifacts('policies-artifacts', asset => asset.tabs.includes('policies'));
     }}
 
+    function renderSustainabilityTab() {{
+      const strategy = 'strategy_sus';
+      const records = filteredPolicies({{ requireYear: true }});
+      const summary = summarize(records, strategy);
+      renderCards('sus-kpis', summary, 'sustainability score');
+      renderPlot(
+        'sus-trend-chart',
+        lineSeries(records, strategy, [
+          {{ key: 'all', label: 'All Policies' }},
+          {{ key: 'demand_side', label: 'Demand Side' }},
+          {{ key: 'supply_side', label: 'Supply Side' }}
+        ]),
+        chartLayout('Environmental sustainability trend', {{ yaxis: {{ title: 'Average similarity', gridcolor: 'rgba(213, 207, 193, 0.6)' }} }})
+      );
+      renderPlot(
+        'sus-map-chart',
+        countryMapTrace(records, strategy),
+        chartLayout('', {{
+          margin: {{ l: 0, r: 0, t: 10, b: 0 }},
+          geo: {{ projection: {{ type: 'natural earth' }}, showframe: false, showcoastlines: false, bgcolor: 'rgba(0,0,0,0)' }},
+          coloraxis: {{ colorscale: 'Viridis', colorbar: {{ title: 'Avg. score' }} }}
+        }})
+      );
+      renderPlot(
+        'sus-country-bar',
+        topCountriesBar(records, strategy, false),
+        chartLayout('Top countries by average sustainability alignment', {{
+          margin: {{ l: 180, r: 20, t: 18, b: 42 }},
+          yaxis: {{ automargin: true, gridcolor: 'rgba(213, 207, 193, 0.6)' }},
+          xaxis: {{ title: 'Average score', gridcolor: 'rgba(213, 207, 193, 0.6)' }}
+        }})
+      );
+      renderTable('sus-policies-table', filteredPolicies({{ requireYear: false }}), strategy, 25);
+      renderArtifacts('sus-artifacts', asset => asset.tabs.includes('environmental-sustainability'));
+    }}
+
     function renderFilterSummary() {{
       const countryLabel = state.country === '__all__' ? 'all countries' : state.country;
       const categoryLabel = CATEGORY_LABELS[state.category] || state.category;
@@ -1475,8 +1588,10 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
     function renderDashboard() {{
       renderFilterSummary();
       renderOverviewTab();
-      renderTrendsTab();
+      renderSideTab('demand_side');
+      renderSideTab('supply_side');
       renderPoliciesTab();
+      renderSustainabilityTab();
     }}
 
     setMeta();
