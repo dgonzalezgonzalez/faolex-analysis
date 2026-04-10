@@ -55,6 +55,7 @@ This project analyzes global food legislation data from FAOLEX, containing over 
 - `output/interactive_strategy_map.html` - Animated interactive world map with time slider (1992–2025, sequential Viridis palette)
 - `output/interactive_policy_counts_map.html` - Animated interactive world map showing cumulative policy counts by country over time (1992–2025)
 - `output/interactive_dashboard.html` - Unified dashboard with tabs for filtering, demand-side, supply-side, policies, and environmental sustainability
+- `output/descriptive_statistics.pdf` - Rendered PDF version of the descriptive LaTeX tables for dashboard viewing and download
 
 ---
 
@@ -412,10 +413,11 @@ python3 code/generate_dashboard.py
 
 The dashboard includes:
 - Global filters for country, year range, strategy, and category
+- A map selector that switches between sustainability, food systems, nutrition, and policy-count views in one map panel
 - Tabs for `Filtering`, `Demand Side`, `Supply Side`, `Policies`, and `Environmental Sustainability`
 - Interactive line charts and country maps rebuilt from `data/analysis_dataset.csv`
-- Embedded access to the original interactive HTML outputs
-- Download cards linking the existing PNG, PDF, HTML, and LaTeX outputs
+- Download cards linking the generated PDF outputs, with PDF preferred over duplicate PNG files
+- A rendered PDF view of `output/descriptive_statistics.tex` inside the Policies tab
 
 ### Descriptive Statistics (Python → LaTeX)
 Generate LaTeX tables with summary statistics and top/bottom policy rankings:

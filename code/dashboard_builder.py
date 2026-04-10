@@ -7,12 +7,22 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
+import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+cache_root = (Path("data/temp") / "cache").resolve()
+os.environ.setdefault("MPLCONFIGDIR", str((Path("data/temp") / "mplconfig").resolve()))
+os.environ.setdefault("XDG_CACHE_HOME", str(cache_root))
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.backends.backend_pdf import PdfPages
 
 STRATEGY_LABELS = {
     "strategy_sus": "Environmental Sustainability",
@@ -34,6 +44,151 @@ CATEGORY_LABELS = {
 }
 
 OUTPUT_PREVIEW_LIMIT = 32
+
+
+def extract_readme_intro(readme_path: Path = Path("README.md")) -> dict[str, str]:
+    """Pull dashboard title and description from the repository README."""
+    if not readme_path.exists():
+        return {
+            "title": "FAOLEX Food Legislation Analysis",
+            "description": "Interactive dashboard for FAOLEX analysis outputs.",
+        }
+
+    lines = readme_path.read_text(encoding="utf-8").splitlines()
+    title = "FAOLEX Food Legislation Analysis"
+    description = "Interactive dashboard for FAOLEX analysis outputs."
+
+    for line in lines:
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
+
+    for idx, line in enumerate(lines):
+        if line.strip() == "## Project Overview":
+            for follow in lines[idx + 1 :]:
+                text = follow.strip()
+                if text:
+                    description = text
+                    return {"title": title, "description": description}
+            break
+
+    return {"title": title, "description": description}
+
+
+def _clean_latex_text(text: str) -> str:
+    text = text.strip()
+    text = text.replace("\\\\", "")
+    text = text.replace("\\quad", "  ")
+    text = re.sub(r"\\textbf\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\multicolumn\{[^}]*\}\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\caption\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\label\{([^}]*)\}", r"", text)
+    text = re.sub(r"\\subsubsection\{([^}]*)\}", r"\1", text)
+    text = text.replace("\\begin{table}[htbp]", "")
+    text = text.replace("\\end{table}", "")
+    text = text.replace("\\begin{tabular}{lcccc}", "")
+    text = re.sub(r"\\begin\{tabular\}\{[^}]*\}", "", text)
+    text = text.replace("\\end{tabular}", "")
+    text = text.replace("\\toprule", "")
+    text = text.replace("\\midrule", "")
+    text = text.replace("\\bottomrule", "")
+    text = text.replace("{", "")
+    text = text.replace("}", "")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def build_descriptive_statistics_pdf(
+    tex_path: Path = Path("output/descriptive_statistics.tex"),
+    pdf_path: Path = Path("output/descriptive_statistics.pdf"),
+) -> Path | None:
+    """Render the generated LaTeX table content into a readable PDF without TeX."""
+    if not tex_path.exists():
+        return None
+
+    raw_lines = tex_path.read_text(encoding="utf-8").splitlines()
+    blocks: list[tuple[str, list[str]]] = []
+    current_section: str | None = None
+    current_caption: str | None = None
+    current_lines: list[str] = []
+    in_table = False
+
+    for raw_line in raw_lines:
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if line.startswith("\\subsubsection{"):
+            current_section = _clean_latex_text(line)
+            continue
+
+        if line.startswith("\\begin{table}"):
+            in_table = True
+            current_caption = current_section
+            current_lines = []
+            continue
+
+        if not in_table:
+            continue
+
+        if line.startswith("\\caption{"):
+            current_caption = _clean_latex_text(line)
+            continue
+
+        if line.startswith("\\end{table}"):
+            title = current_caption or current_section or "Descriptive Statistics"
+            cleaned_lines = [entry for entry in current_lines if entry]
+            if cleaned_lines:
+                blocks.append((title, cleaned_lines))
+            in_table = False
+            current_caption = None
+            current_lines = []
+            continue
+
+        if any(
+            line.startswith(prefix)
+            for prefix in ("\\label{", "\\begin{tabular}", "\\end{tabular}", "\\toprule", "\\midrule", "\\bottomrule")
+        ):
+            continue
+
+        if "&" in line:
+            parts = [_clean_latex_text(part) for part in line.split("&")]
+            cleaned = " | ".join(part for part in parts if part)
+        else:
+            cleaned = _clean_latex_text(line)
+        if cleaned:
+            current_lines.append(cleaned)
+
+    if not blocks:
+        blocks = [("Descriptive Statistics", [_clean_latex_text(line) for line in raw_lines if _clean_latex_text(line)])]
+
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    with PdfPages(pdf_path) as pdf:
+        for title, lines in blocks:
+            wrapped: list[str] = []
+            for line in lines:
+                wrapped.extend(textwrap.wrap(line, width=110) or [""])
+
+            page_size = 28
+            for offset in range(0, len(wrapped), page_size):
+                page_lines = wrapped[offset : offset + page_size]
+                fig = plt.figure(figsize=(11, 8.5))
+                ax = fig.add_subplot(111)
+                ax.axis("off")
+                ax.text(0.02, 0.96, title, fontsize=16, fontweight="bold", va="top", ha="left")
+                ax.text(
+                    0.02,
+                    0.91,
+                    "\n".join(page_lines),
+                    fontsize=9,
+                    family="monospace",
+                    va="top",
+                    ha="left",
+                )
+                pdf.savefig(fig, bbox_inches="tight")
+                plt.close(fig)
+
+    return pdf_path
 
 
 def parse_year(value: Any) -> int | None:
@@ -123,6 +278,18 @@ def classify_output_asset(path: Path) -> dict[str, Any] | None:
             "tabs": _asset_tabs("interactive_map", None, "all"),
         }
 
+    if name == "descriptive_statistics.pdf":
+        return {
+            "filename": name,
+            "href": name,
+            "kind": "descriptive_table",
+            "format": suffix,
+            "label": "Descriptive statistics PDF",
+            "strategy": None,
+            "side": "all",
+            "tabs": _asset_tabs("descriptive_table", None, "all"),
+        }
+
     if name == "descriptive_statistics.tex":
         return {
             "filename": name,
@@ -206,9 +373,14 @@ def build_asset_manifest(
     manifest_path: Path = Path("data/temp/dashboard_asset_manifest.json"),
 ) -> list[dict[str, Any]]:
     """Scan output files and write a manifest used by the dashboard."""
+    pdf_stems = {path.stem for path in output_dir.glob("*.pdf")}
     assets: list[dict[str, Any]] = []
     for path in sorted(output_dir.glob("*")):
         if not path.is_file():
+            continue
+        if path.suffix.lower() == ".png" and path.stem in pdf_stems:
+            continue
+        if path.suffix.lower() == ".tex" and (output_dir / f"{path.stem}.pdf").exists():
             continue
         asset = classify_output_asset(path)
         if asset is not None:
@@ -246,6 +418,11 @@ def prepare_dashboard_payload(
     """Load analysis outputs and return a payload consumable by the dashboard."""
     df = pd.read_csv(data_path)
     df["year"] = df["date_original"].apply(parse_year)
+    readme_intro = extract_readme_intro()
+    descriptive_pdf = build_descriptive_statistics_pdf(
+        tex_path=output_dir / "descriptive_statistics.tex",
+        pdf_path=output_dir / "descriptive_statistics.pdf",
+    )
 
     df["country"] = df["country"].fillna("Unknown")
     df["Title"] = df["Title"].fillna("")
@@ -275,7 +452,6 @@ def prepare_dashboard_payload(
             }
         )
 
-    descriptive_preview = _descriptive_table_preview(output_dir / "descriptive_statistics.tex")
     category_counts = df["Category"].value_counts(dropna=False).to_dict()
 
     payload = {
@@ -286,6 +462,9 @@ def prepare_dashboard_payload(
             "year_min": int(valid_years.min()) if not valid_years.empty else None,
             "year_max": int(valid_years.max()) if not valid_years.empty else None,
             "category_counts": category_counts,
+            "title": readme_intro["title"],
+            "description": readme_intro["description"],
+            "descriptive_pdf": descriptive_pdf.name if descriptive_pdf else None,
         },
         "filters": {
             "countries": countries,
@@ -294,7 +473,6 @@ def prepare_dashboard_payload(
         },
         "policies": records,
         "assets": assets,
-        "descriptive_preview": descriptive_preview,
     }
     return payload
 
@@ -705,11 +883,9 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
   <div class="page">
     <section class="hero">
       <div class="panel hero-copy">
-        <div class="eyebrow">FAOLEX Analysis Dashboard</div>
-        <h1>One interactive view across maps, trends, policies, and sustainability signals.</h1>
-        <p>
-          This dashboard consolidates the repository's output files into a single artifact. Use the global filters to pivot by country, year window, strategy dimension, and category, then move across the requested tabs for demand-side, supply-side, policy-level, and sustainability-focused views.
-        </p>
+        <div class="eyebrow">Interactive Research Dashboard</div>
+        <h1 id="hero-title"></h1>
+        <p id="hero-description"></p>
       </div>
       <div class="panel hero-meta">
         <div class="metric"><strong id="meta-total-records"></strong><span>Policies in the analysis dataset</span></div>
@@ -745,9 +921,25 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           </select>
         </div>
         <div>
+          <label for="map-metric-select">Map Measure</label>
+          <select id="map-metric-select">
+            <option value="strategy_sus">Similarity: Environmental Sustainability</option>
+            <option value="strategy_fs">Similarity: Food Systems</option>
+            <option value="strategy_nut">Similarity: Nutrition</option>
+            <option value="policy_count_all">Policy Counts: All Policies</option>
+            <option value="policy_count_demand_side">Policy Counts: Demand Side</option>
+            <option value="policy_count_supply_side">Policy Counts: Supply Side</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar-grid">
+        <div>
           <label for="policy-search">Policy Search</label>
           <input id="policy-search" type="search" placeholder="Search titles in the Policies tab">
         </div>
+        <div></div>
+        <div></div>
+        <div></div>
       </div>
       <div class="year-grid">
         <div>
@@ -763,7 +955,6 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       </div>
       <div class="toolbar-actions">
         <button class="btn-primary" id="reset-filters">Reset filters</button>
-        <button class="btn-secondary" id="jump-dashboard-download">Open unified HTML file</button>
         <span class="hint" id="filter-summary"></span>
       </div>
     </section>
@@ -790,14 +981,12 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       </div>
       <div class="grid-two">
         <div class="panel card">
-          <div class="section-title"><h3>Country map</h3><p>Average similarity score for the selected strategy.</p></div>
+          <div class="section-title"><h3>Map explorer</h3><p>Switch between similarity dimensions and policy-count views from one map.</p></div>
           <div id="overview-map-chart" class="chart"></div>
         </div>
         <div class="panel card">
-          <div class="section-title"><h3>Original interactive outputs</h3><p>The existing pipeline HTML files remain accessible here.</p></div>
-          <div class="iframe-wrap"><iframe src="interactive_strategy_map.html" title="Interactive strategy map"></iframe></div>
-          <div style="height:14px"></div>
-          <div class="iframe-wrap"><iframe src="interactive_policy_counts_map.html" title="Interactive policy counts map"></iframe></div>
+          <div class="section-title"><h3>Map explorer guide</h3><p>Choose sustainability, food systems, nutrition, or policy counts from the filter bar. Same panel, one map at a time.</p></div>
+          <div id="overview-map-note" class="empty"></div>
         </div>
       </div>
       <div class="panel card">
@@ -867,8 +1056,8 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           <div id="policies-country-bar" class="chart short"></div>
         </div>
         <div class="panel card">
-          <div class="section-title"><h3>Descriptive table preview</h3><p>This is the existing LaTeX output from the pipeline.</p></div>
-          <pre class="code-preview" id="descriptive-preview"></pre>
+          <div class="section-title"><h3>Descriptive statistics PDF</h3><p>Rendered from the generated LaTeX tables into a dashboard-friendly PDF.</p></div>
+          <div class="iframe-wrap"><iframe id="descriptive-pdf-frame" title="Descriptive statistics PDF"></iframe></div>
         </div>
       </div>
       <div class="panel card">
@@ -925,6 +1114,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       tab: 'filtering',
       country: '__all__',
       strategy: 'strategy_sus',
+      mapMetric: 'strategy_sus',
       category: 'all',
       search: '',
       yearStart: DATA.meta.year_min,
@@ -934,6 +1124,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
     const els = {{
       country: document.getElementById('country-select'),
       strategy: document.getElementById('strategy-select'),
+      mapMetric: document.getElementById('map-metric-select'),
       category: document.getElementById('category-select'),
       search: document.getElementById('policy-search'),
       yearStart: document.getElementById('year-start'),
@@ -944,6 +1135,9 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
     }};
 
     function setMeta() {{
+      document.title = DATA.meta.title;
+      document.getElementById('hero-title').textContent = DATA.meta.title;
+      document.getElementById('hero-description').textContent = DATA.meta.description;
       document.getElementById('meta-total-records').textContent = numberFormat.format(DATA.meta.total_records);
       document.getElementById('meta-country-count').textContent = numberFormat.format(DATA.meta.countries);
       document.getElementById('meta-year-range').textContent = `${{DATA.meta.year_min}}-${{DATA.meta.year_max}}`;
@@ -976,6 +1170,10 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
         state.strategy = els.strategy.value;
         renderDashboard();
       }});
+      els.mapMetric.addEventListener('change', () => {{
+        state.mapMetric = els.mapMetric.value;
+        renderDashboard();
+      }});
       els.category.addEventListener('change', () => {{
         state.category = els.category.value;
         renderDashboard();
@@ -1005,21 +1203,20 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       document.getElementById('reset-filters').addEventListener('click', () => {{
         state.country = '__all__';
         state.strategy = 'strategy_sus';
+        state.mapMetric = 'strategy_sus';
         state.category = 'all';
         state.search = '';
         state.yearStart = DATA.meta.year_min;
         state.yearEnd = DATA.meta.year_max;
         els.country.value = state.country;
         els.strategy.value = state.strategy;
+        els.mapMetric.value = state.mapMetric;
         els.category.value = state.category;
         els.search.value = '';
         els.yearStart.value = state.yearStart;
         els.yearEnd.value = state.yearEnd;
         updateYearLabels();
         renderDashboard();
-      }});
-      document.getElementById('jump-dashboard-download').addEventListener('click', () => {{
-        window.location.href = 'interactive_dashboard.html';
       }});
     }}
 
@@ -1276,7 +1473,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
 
     function renderArtifacts(targetId, matcher) {{
       const target = document.getElementById(targetId);
-      const assets = DATA.assets.filter(matcher);
+      const assets = DATA.assets.filter(asset => asset.format === 'pdf').filter(matcher);
       if (!assets.length) {{
         target.innerHTML = '<div class="empty">No matching generated files for this view.</div>';
         return;
@@ -1288,6 +1485,27 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           <a href="${{escapeHtml(asset.href)}}" target="_blank" rel="noopener noreferrer">Open file</a>
         </div>
       `).join('');
+    }}
+
+    function mapMetricMeta(metric) {{
+      if (metric.startsWith('policy_count_')) {{
+        const side = metric.replace('policy_count_', '');
+        const labels = {{
+          all: 'all policies',
+          demand_side: 'demand-side policies',
+          supply_side: 'supply-side policies'
+        }};
+        return {{
+          mode: 'count',
+          side,
+          label: `policy counts for ${{labels[side]}}`
+        }};
+      }}
+      return {{
+        mode: 'similarity',
+        strategy: metric,
+        label: `average ${{STRATEGIES[metric].toLowerCase()}} score`
+      }};
     }}
 
     function renderPreviews(targetId, strategy, side) {{
@@ -1350,6 +1568,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
     function renderOverviewTab() {{
       const records = filteredPolicies({{ requireYear: true }});
       const summary = summarize(records, state.strategy);
+      const mapMetric = mapMetricMeta(state.mapMetric);
       renderCards('overview-kpis', summary, STRATEGIES[state.strategy]);
       renderPlot(
         'overview-trend-chart',
@@ -1371,14 +1590,24 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       );
       renderPlot(
         'overview-map-chart',
-        countryMapTrace(records, state.strategy),
+        mapMetric.mode === 'count'
+          ? countryCountTrace(
+              records.filter(rec => mapMetric.side === 'all' || rec.category === mapMetric.side),
+              'Policy count'
+            )
+          : countryMapTrace(records, mapMetric.strategy),
         chartLayout('', {{
           margin: {{ l: 0, r: 0, t: 10, b: 0 }},
           geo: {{ projection: {{ type: 'natural earth' }}, showframe: false, showcoastlines: false, bgcolor: 'rgba(0,0,0,0)' }},
-          coloraxis: {{ colorscale: 'Viridis', colorbar: {{ title: 'Avg. score' }} }}
+          coloraxis: {{
+            colorscale: 'Viridis',
+            colorbar: {{ title: mapMetric.mode === 'count' ? 'Policies' : 'Avg. score' }}
+          }}
         }})
       );
-      renderArtifacts('overview-artifacts', asset => asset.filename !== 'interactive_dashboard.html');
+      document.getElementById('overview-map-note').textContent =
+        `Map now showing ${{mapMetric.label}}. Use "Map Measure" above to switch dimensions or policy-count views.`;
+      renderArtifacts('overview-artifacts', asset => asset.filename !== 'interactive_dashboard.pdf' && asset.filename !== 'interactive_dashboard.html');
     }}
 
     function renderSideTab(side) {{
@@ -1429,7 +1658,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           xaxis: {{ title: 'Policies', gridcolor: 'rgba(213, 207, 193, 0.6)' }}
         }})
       );
-      document.getElementById('descriptive-preview').textContent = DATA.descriptive_preview || 'descriptive_statistics.tex not found.';
+      document.getElementById('descriptive-pdf-frame').src = DATA.meta.descriptive_pdf || '';
       renderTable('policies-table-wrap', records, state.strategy, 30);
       renderArtifacts('policies-artifacts', asset => asset.tabs.includes('policies'));
     }}
@@ -1473,7 +1702,8 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
     function renderFilterSummary() {{
       const countryLabel = state.country === '__all__' ? 'all countries' : state.country;
       const categoryLabel = CATEGORY_LABELS[state.category] || state.category;
-      els.filterSummary.textContent = `Showing ${{countryLabel}}, ${{categoryLabel.toLowerCase()}}, ${{state.yearStart}}-${{state.yearEnd}}, focus on ${{STRATEGIES[state.strategy].toLowerCase()}}.`;
+      const mapLabel = mapMetricMeta(state.mapMetric).label;
+      els.filterSummary.textContent = `Showing ${{countryLabel}}, ${{categoryLabel.toLowerCase()}}, ${{state.yearStart}}-${{state.yearEnd}}, trend focus on ${{STRATEGIES[state.strategy].toLowerCase()}}, map focus on ${{mapLabel}}.`;
     }}
 
     function renderDashboard() {{
