@@ -8,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from dashboard_builder import (
     build_asset_manifest,
-    build_descriptive_statistics_pdf,
     generate_dashboard,
     prepare_dashboard_payload,
 )
@@ -17,10 +16,6 @@ from dashboard_builder import (
 class DashboardBuilderTests(unittest.TestCase):
     def test_build_asset_manifest_includes_core_outputs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            build_descriptive_statistics_pdf(
-                tex_path=Path("output/descriptive_statistics.tex"),
-                pdf_path=Path("output/descriptive_statistics.pdf"),
-            )
             manifest_path = Path(tmpdir) / "dashboard_asset_manifest.json"
             assets = build_asset_manifest(
                 output_dir=Path("output"),
@@ -33,8 +28,7 @@ class DashboardBuilderTests(unittest.TestCase):
             filenames = {asset["filename"] for asset in assets}
             self.assertIn("interactive_strategy_map.html", filenames)
             self.assertIn("interactive_policy_counts_map.html", filenames)
-            self.assertIn("descriptive_statistics.pdf", filenames)
-            self.assertNotIn("descriptive_statistics.tex", filenames)
+            self.assertIn("descriptive_statistics.tex", filenames)
             self.assertNotIn("strategy_sus_map.png", filenames)
 
             manifest_assets = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -55,7 +49,7 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertEqual(payload["meta"]["year_max"], 2025)
             self.assertIn("strategy_sus", payload["filters"]["strategies"])
             self.assertEqual(payload["meta"]["title"], "FAOLEX Food Legislation Analysis")
-            self.assertEqual(payload["meta"]["descriptive_pdf"], "descriptive_statistics.pdf")
+            self.assertIn("descriptive_preview", payload)
 
     def test_generate_dashboard_writes_expected_html(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -73,6 +67,7 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertIn("Demand Side", html)
             self.assertIn("Policy rankings", html)
             self.assertIn("Map Measure", html)
+            self.assertIn("Descriptive statistics LaTeX", html)
 
 
 if __name__ == "__main__":

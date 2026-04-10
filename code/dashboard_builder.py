@@ -7,22 +7,11 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import re
-import textwrap
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-cache_root = (Path("data/temp") / "cache").resolve()
-os.environ.setdefault("MPLCONFIGDIR", str((Path("data/temp") / "mplconfig").resolve()))
-os.environ.setdefault("XDG_CACHE_HOME", str(cache_root))
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib.backends.backend_pdf import PdfPages
 
 STRATEGY_LABELS = {
     "strategy_sus": "Environmental Sustainability",
@@ -97,98 +86,6 @@ def _clean_latex_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
-
-def build_descriptive_statistics_pdf(
-    tex_path: Path = Path("output/descriptive_statistics.tex"),
-    pdf_path: Path = Path("output/descriptive_statistics.pdf"),
-) -> Path | None:
-    """Render the generated LaTeX table content into a readable PDF without TeX."""
-    if not tex_path.exists():
-        return None
-
-    raw_lines = tex_path.read_text(encoding="utf-8").splitlines()
-    blocks: list[tuple[str, list[str]]] = []
-    current_section: str | None = None
-    current_caption: str | None = None
-    current_lines: list[str] = []
-    in_table = False
-
-    for raw_line in raw_lines:
-        line = raw_line.strip()
-        if not line:
-            continue
-
-        if line.startswith("\\subsubsection{"):
-            current_section = _clean_latex_text(line)
-            continue
-
-        if line.startswith("\\begin{table}"):
-            in_table = True
-            current_caption = current_section
-            current_lines = []
-            continue
-
-        if not in_table:
-            continue
-
-        if line.startswith("\\caption{"):
-            current_caption = _clean_latex_text(line)
-            continue
-
-        if line.startswith("\\end{table}"):
-            title = current_caption or current_section or "Descriptive Statistics"
-            cleaned_lines = [entry for entry in current_lines if entry]
-            if cleaned_lines:
-                blocks.append((title, cleaned_lines))
-            in_table = False
-            current_caption = None
-            current_lines = []
-            continue
-
-        if any(
-            line.startswith(prefix)
-            for prefix in ("\\label{", "\\begin{tabular}", "\\end{tabular}", "\\toprule", "\\midrule", "\\bottomrule")
-        ):
-            continue
-
-        if "&" in line:
-            parts = [_clean_latex_text(part) for part in line.split("&")]
-            cleaned = " | ".join(part for part in parts if part)
-        else:
-            cleaned = _clean_latex_text(line)
-        if cleaned:
-            current_lines.append(cleaned)
-
-    if not blocks:
-        blocks = [("Descriptive Statistics", [_clean_latex_text(line) for line in raw_lines if _clean_latex_text(line)])]
-
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    with PdfPages(pdf_path) as pdf:
-        for title, lines in blocks:
-            wrapped: list[str] = []
-            for line in lines:
-                wrapped.extend(textwrap.wrap(line, width=110) or [""])
-
-            page_size = 28
-            for offset in range(0, len(wrapped), page_size):
-                page_lines = wrapped[offset : offset + page_size]
-                fig = plt.figure(figsize=(11, 8.5))
-                ax = fig.add_subplot(111)
-                ax.axis("off")
-                ax.text(0.02, 0.96, title, fontsize=16, fontweight="bold", va="top", ha="left")
-                ax.text(
-                    0.02,
-                    0.91,
-                    "\n".join(page_lines),
-                    fontsize=9,
-                    family="monospace",
-                    va="top",
-                    ha="left",
-                )
-                pdf.savefig(fig, bbox_inches="tight")
-                plt.close(fig)
-
-    return pdf_path
 
 
 def parse_year(value: Any) -> int | None:
@@ -276,18 +173,6 @@ def classify_output_asset(path: Path) -> dict[str, Any] | None:
             "strategy": None,
             "side": "all",
             "tabs": _asset_tabs("interactive_map", None, "all"),
-        }
-
-    if name == "descriptive_statistics.pdf":
-        return {
-            "filename": name,
-            "href": name,
-            "kind": "descriptive_table",
-            "format": suffix,
-            "label": "Descriptive statistics PDF",
-            "strategy": None,
-            "side": "all",
-            "tabs": _asset_tabs("descriptive_table", None, "all"),
         }
 
     if name == "descriptive_statistics.tex":
@@ -380,8 +265,6 @@ def build_asset_manifest(
             continue
         if path.suffix.lower() == ".png" and path.stem in pdf_stems:
             continue
-        if path.suffix.lower() == ".tex" and (output_dir / f"{path.stem}.pdf").exists():
-            continue
         asset = classify_output_asset(path)
         if asset is not None:
             assets.append(asset)
@@ -419,11 +302,6 @@ def prepare_dashboard_payload(
     df = pd.read_csv(data_path)
     df["year"] = df["date_original"].apply(parse_year)
     readme_intro = extract_readme_intro()
-    descriptive_pdf = build_descriptive_statistics_pdf(
-        tex_path=output_dir / "descriptive_statistics.tex",
-        pdf_path=output_dir / "descriptive_statistics.pdf",
-    )
-
     df["country"] = df["country"].fillna("Unknown")
     df["Title"] = df["Title"].fillna("")
     df["Language_of_document"] = df["Language_of_document"].fillna("")
@@ -433,6 +311,7 @@ def prepare_dashboard_payload(
 
     valid_years = df["year"].dropna().astype(int)
     countries = sorted(country for country in df["country"].dropna().astype(str).unique() if country)
+    descriptive_preview = _descriptive_table_preview(output_dir / "descriptive_statistics.tex")
 
     records: list[dict[str, Any]] = []
     for row in df.itertuples(index=False):
@@ -456,7 +335,6 @@ def prepare_dashboard_payload(
 
     payload = {
         "meta": {
-            "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "total_records": len(records),
             "countries": len(countries),
             "year_min": int(valid_years.min()) if not valid_years.empty else None,
@@ -464,7 +342,6 @@ def prepare_dashboard_payload(
             "category_counts": category_counts,
             "title": readme_intro["title"],
             "description": readme_intro["description"],
-            "descriptive_pdf": descriptive_pdf.name if descriptive_pdf else None,
         },
         "filters": {
             "countries": countries,
@@ -473,6 +350,7 @@ def prepare_dashboard_payload(
         },
         "policies": records,
         "assets": assets,
+        "descriptive_preview": descriptive_preview,
     }
     return payload
 
@@ -891,7 +769,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
         <div class="metric"><strong id="meta-total-records"></strong><span>Policies in the analysis dataset</span></div>
         <div class="metric"><strong id="meta-country-count"></strong><span>Countries and territories represented</span></div>
         <div class="metric"><strong id="meta-year-range"></strong><span>Available year range with valid dates</span></div>
-        <div class="metric"><strong id="meta-generated-at"></strong><span>Dashboard build timestamp</span></div>
+        <div class="metric"><strong id="meta-category-mix"></strong><span>Category mix in full analysis dataset</span></div>
       </div>
     </section>
 
@@ -983,15 +861,12 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
         <div class="panel card">
           <div class="section-title"><h3>Map explorer</h3><p>Switch between similarity dimensions and policy-count views from one map.</p></div>
           <div id="overview-map-chart" class="chart"></div>
-        </div>
-        <div class="panel card">
-          <div class="section-title"><h3>Map explorer guide</h3><p>Choose sustainability, food systems, nutrition, or policy counts from the filter bar. Same panel, one map at a time.</p></div>
           <div id="overview-map-note" class="empty"></div>
         </div>
-      </div>
-      <div class="panel card">
-        <div class="section-title"><h3>Generated output catalog</h3><p>All committed outputs grouped in one place for quick lookup and download.</p></div>
-        <div id="overview-artifacts" class="artifact-grid"></div>
+        <div class="panel card">
+          <div class="section-title"><h3>Generated output catalog</h3><p>All committed outputs grouped in one place for quick lookup and download.</p></div>
+          <div id="overview-artifacts" class="artifact-grid"></div>
+        </div>
       </div>
     </section>
 
@@ -1056,8 +931,8 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           <div id="policies-country-bar" class="chart short"></div>
         </div>
         <div class="panel card">
-          <div class="section-title"><h3>Descriptive statistics PDF</h3><p>Rendered from the generated LaTeX tables into a dashboard-friendly PDF.</p></div>
-          <div class="iframe-wrap"><iframe id="descriptive-pdf-frame" title="Descriptive statistics PDF"></iframe></div>
+          <div class="section-title"><h3>Descriptive statistics LaTeX</h3><p>Pipeline-generated table source. Kept as LaTeX only.</p></div>
+          <pre class="code-preview" id="descriptive-preview"></pre>
         </div>
       </div>
       <div class="panel card">
@@ -1141,8 +1016,10 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
       document.getElementById('meta-total-records').textContent = numberFormat.format(DATA.meta.total_records);
       document.getElementById('meta-country-count').textContent = numberFormat.format(DATA.meta.countries);
       document.getElementById('meta-year-range').textContent = `${{DATA.meta.year_min}}-${{DATA.meta.year_max}}`;
-      document.getElementById('meta-generated-at').textContent = new Date(DATA.meta.generated_at).toLocaleString();
-      document.getElementById('footer-note').textContent = `Generated from repository data on ${{new Date(DATA.meta.generated_at).toLocaleString()}}.`;
+      const counts = DATA.meta.category_counts;
+      document.getElementById('meta-category-mix').textContent =
+        `${{numberFormat.format(counts.supply_side || 0)}} / ${{numberFormat.format(counts.demand_side || 0)}} / ${{numberFormat.format(counts.unclear || 0)}}`;
+      document.getElementById('footer-note').textContent = 'FAOLEX analysis outputs consolidated into one interactive dashboard.';
     }}
 
     function setupControls() {{
@@ -1473,7 +1350,9 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
 
     function renderArtifacts(targetId, matcher) {{
       const target = document.getElementById(targetId);
-      const assets = DATA.assets.filter(asset => asset.format === 'pdf').filter(matcher);
+      const assets = DATA.assets
+        .filter(asset => asset.format === 'pdf' || asset.filename === 'descriptive_statistics.tex')
+        .filter(matcher);
       if (!assets.length) {{
         target.innerHTML = '<div class="empty">No matching generated files for this view.</div>';
         return;
@@ -1606,7 +1485,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
         }})
       );
       document.getElementById('overview-map-note').textContent =
-        `Map now showing ${{mapMetric.label}}. Use "Map Measure" above to switch dimensions or policy-count views.`;
+        `Now showing ${{mapMetric.label}}. Change "Map Measure" above to switch among sustainability, food systems, nutrition, and policy-count views.`;
       renderArtifacts('overview-artifacts', asset => asset.filename !== 'interactive_dashboard.pdf' && asset.filename !== 'interactive_dashboard.html');
     }}
 
@@ -1658,7 +1537,7 @@ def _render_dashboard_html(payload: dict[str, Any]) -> str:
           xaxis: {{ title: 'Policies', gridcolor: 'rgba(213, 207, 193, 0.6)' }}
         }})
       );
-      document.getElementById('descriptive-pdf-frame').src = DATA.meta.descriptive_pdf || '';
+      document.getElementById('descriptive-preview').textContent = DATA.descriptive_preview || 'descriptive_statistics.tex not found.';
       renderTable('policies-table-wrap', records, state.strategy, 30);
       renderArtifacts('policies-artifacts', asset => asset.tabs.includes('policies'));
     }}
