@@ -7,7 +7,7 @@ local out_dir "output/econometrics"
 local temp_dir "data/temp"
 local log_dir "`out_dir'/logs"
 
-local pre_window 5
+local pre_window 10
 local post_window 10
 local min_side 4
 local min_control_obs 8
@@ -285,7 +285,7 @@ foreach oo of local outcomes {
                 (line beta rel_time, lcolor(navy) lwidth(medthick)) ///
                 , yline(0, lcolor(maroon) lpattern(dash)) ///
                   xline(-1, lcolor(gs8) lpattern(shortdash)) ///
-                  xlabel(-5(1)10) ///
+                  xlabel(-10(1)10) ///
                   xtitle("Relative year to entry (k)") ///
                   ytitle("TWFE coefficient") ///
                   title("`=upper("`org'")' entry: `oo' TWFE event-study") ///
