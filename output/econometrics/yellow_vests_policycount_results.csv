@@ -1,0 +1,9 @@
+frequency,donor_spec,method,att,se,ci95_lb,ci95_ub,chosen_lags,n_countries,n_controls,n_obs,rc,covariates
+annual,oecd,sdid,-2.083861,5.8407822,-13.531584,9.3638611,12,37,36,296,0,lag1_count lag2_count lag3_count lag4_count lag5_count lag6_count lag7_count lag8_count lag9_count lag10_count lag11_cou
+annual,oecd,sc,2.253824,3.587127,-4.7768159,9.2844639,12,37,36,296,0,
+annual,oecd_exclshock,sdid,-6.382766,6.0168862,-18.175646,5.4101138,12,32,31,256,0,lag1_count lag2_count lag3_count lag4_count lag5_count lag6_count lag7_count lag8_count lag9_count lag10_count lag11_cou
+annual,oecd_exclshock,sc,2.308171,4.3838692,-6.2840543,10.900396,12,32,31,256,0,
+quarterly,oecd,sdid,.8480107,1.1109819,-1.329474,3.0254953,12,36,35,864,0,lag1_count lag2_count lag3_count lag4_count lag5_count lag6_count lag7_count lag8_count lag9_count lag10_count lag11_cou
+quarterly,oecd,sc,.8752217,1.000298,-1.0853263,2.8357697,12,36,35,864,0,
+quarterly,oecd_exclshock,sdid,.4973291,1.183856,-1.822986,2.8176441,12,31,30,744,0,lag1_count lag2_count lag3_count lag4_count lag5_count lag6_count lag7_count lag8_count lag9_count lag10_count lag11_cou
+quarterly,oecd_exclshock,sc,.9217729,1.136423,-1.3055753,3.149121,12,31,30,744,0,
