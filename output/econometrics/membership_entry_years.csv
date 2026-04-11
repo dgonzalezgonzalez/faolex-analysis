@@ -1,0 +1,374 @@
+organization,country,entry_year,exit_year,in_data
+eu,Afghanistan,,,0
+eu,Albania,,,0
+eu,Algeria,,,0
+eu,American Samoa (USA),,,0
+eu,Andorra,,,0
+eu,Angola,,,0
+eu,Antigua and Barbuda,,,0
+eu,Argentina,,,0
+eu,Armenia,,,0
+eu,Aruba (Netherlands),,,0
+eu,Australia,,,0
+eu,Austria,1995,,1
+eu,Azerbaijan,,,0
+eu,Bahamas,,,0
+eu,Bahrain,,,0
+eu,Bangladesh,,,0
+eu,Barbados,,,0
+eu,Belarus,,,0
+eu,Belize,,,0
+eu,Benin,,,0
+eu,Bermuda (UK),,,0
+eu,Bhutan,,,0
+eu,Bolivia (Plurinational State of),,,0
+eu,Bosnia and Herzegovina,,,0
+eu,Botswana,,,0
+eu,Brazil,,,0
+eu,Brunei Darussalam,,,0
+eu,Bulgaria,2007,,1
+eu,Burkina Faso,,,0
+eu,Burundi,,,0
+eu,Cabo Verde,,,0
+eu,Cambodia,,,0
+eu,Cameroon,,,0
+eu,Canada,,,0
+eu,Central African Republic,,,0
+eu,Chad,,,0
+eu,Chile,,,0
+eu,China,,,0
+eu,"China, Hong Kong SAR",,,0
+eu,"China, Macao SAR",,,0
+eu,Colombia,,,0
+eu,Comoros,,,0
+eu,Congo,,,0
+eu,Cook Islands,,,0
+eu,Costa Rica,,,0
+eu,Croatia,2013,,1
+eu,Cuba,,,0
+eu,Cyprus,2004,,1
+eu,Czechia,2004,,1
+eu,Côte d'Ivoire,,,0
+eu,Democratic Republic of the Congo,,,0
+eu,Djibouti,,,0
+eu,Dominica,,,0
+eu,Dominican Republic,,,0
+eu,Ecuador,,,0
+eu,Egypt,,,0
+eu,El Salvador,,,0
+eu,Estonia,2004,,1
+eu,Eswatini,,,0
+eu,Ethiopia,,,0
+eu,Fiji,,,0
+eu,Finland,1995,,1
+eu,French Polynesia (France),,,0
+eu,Gabon,,,0
+eu,Gambia,,,0
+eu,Georgia,,,0
+eu,Ghana,,,0
+eu,Gibraltar (UK),,,0
+eu,Greenland (Denmark),,,0
+eu,Grenada,,,0
+eu,Guam (USA),,,0
+eu,Guatemala,,,0
+eu,Guernsey (UK),,,0
+eu,Guinea,,,0
+eu,Guinea-Bissau,,,0
+eu,Guyana,,,0
+eu,Haiti,,,0
+eu,Honduras,,,0
+eu,Hungary,2004,,1
+eu,Iceland,,,0
+eu,India,,,0
+eu,Indonesia,,,0
+eu,Iran (Islamic Republic of),,,0
+eu,Iraq,,,0
+eu,Israel,,,0
+eu,Jamaica,,,0
+eu,Japan,,,0
+eu,Jersey  (UK),,,0
+eu,Jordan,,,0
+eu,Kazakhstan,,,0
+eu,Kenya,,,0
+eu,Kiribati,,,0
+eu,Kuwait,,,0
+eu,Kyrgyzstan,,,0
+eu,Lao People's Democratic Republic,,,0
+eu,Latvia,2004,,1
+eu,Lebanon,,,0
+eu,Lesotho,,,0
+eu,Liberia,,,0
+eu,Libya,,,0
+eu,Liechtenstein,,,0
+eu,Madagascar,,,0
+eu,Madeira Islands (Portugal),,,0
+eu,Malawi,,,0
+eu,Malaysia,,,0
+eu,Maldives,,,0
+eu,Mali,,,0
+eu,Malta,2004,,1
+eu,Marshall Islands,,,0
+eu,Mauritania,,,0
+eu,Mauritius,,,0
+eu,Mexico,,,0
+eu,Micronesia (Federated States of),,,0
+eu,Monaco,,,0
+eu,Mongolia,,,0
+eu,Montenegro,,,0
+eu,Montserrat (UK),,,0
+eu,Morocco,,,0
+eu,Mozambique,,,0
+eu,Myanmar,,,0
+eu,Namibia,,,0
+eu,Nauru,,,0
+eu,Nepal,,,0
+eu,New Caledonia (France),,,0
+eu,New Zealand,,,0
+eu,Nicaragua,,,0
+eu,Niger,,,0
+eu,Nigeria,,,0
+eu,North Macedonia,,,0
+eu,Northern Mariana Islands (USA),,,0
+eu,Norway,,,0
+eu,Oman,,,0
+eu,Pakistan,,,0
+eu,Palau,,,0
+eu,Palestine,,,0
+eu,Panama,,,0
+eu,Papua New Guinea,,,0
+eu,Paraguay,,,0
+eu,Peru,,,0
+eu,Philippines,,,0
+eu,Poland,2004,,1
+eu,Puerto Rico (USA),,,0
+eu,Qatar,,,0
+eu,Republic of Korea,,,0
+eu,Republic of Moldova,,,0
+eu,Romania,2007,,1
+eu,Russian Federation,,,0
+eu,Rwanda,,,0
+eu,"Saint Helena, Ascension and Tristan da Cunha (UK)",,,0
+eu,Saint Kitts and Nevis,,,0
+eu,Saint Lucia,,,0
+eu,Saint Vincent and the Grenadines,,,0
+eu,Samoa,,,0
+eu,San Marino,,,0
+eu,Sao Tome and Principe,,,0
+eu,Senegal,,,0
+eu,Serbia,,,0
+eu,Seychelles,,,0
+eu,Sierra Leone,,,0
+eu,Singapore,,,0
+eu,Slovenia,2004,,1
+eu,Solomon Islands,,,0
+eu,Somalia,,,0
+eu,South Africa,,,0
+eu,Spain,1986,,1
+eu,Sri Lanka,,,0
+eu,Sudan,,,0
+eu,Suriname,,,0
+eu,Sweden,1995,,1
+eu,Switzerland,,,0
+eu,Syrian Arab Republic,,,0
+eu,Taiwan Province of China,,,0
+eu,Tajikistan,,,0
+eu,Thailand,,,0
+eu,Timor-Leste,,,0
+eu,Togo,,,0
+eu,Tonga,,,0
+eu,Trinidad and Tobago,,,0
+eu,Tunisia,,,0
+eu,Turkmenistan,,,0
+eu,Tuvalu,,,0
+eu,Türkiye,,,0
+eu,Uganda,,,0
+eu,Ukraine,,,0
+eu,United Arab Emirates,,,0
+eu,United Republic of Tanzania,,,0
+eu,United States of America,,,0
+eu,Uruguay,,,0
+eu,Uzbekistan,,,0
+eu,Vanuatu,,,0
+eu,Venezuela (Bolivarian Republic of),,,0
+eu,Viet Nam,,,0
+eu,Yemen,,,0
+eu,Zambia,,,0
+eu,Zanzibar (United Republic of Tanzania),,,0
+eu,Zimbabwe,,,0
+oecd,Afghanistan,,,0
+oecd,Albania,,,0
+oecd,Algeria,,,0
+oecd,American Samoa (USA),,,0
+oecd,Andorra,,,0
+oecd,Angola,,,0
+oecd,Antigua and Barbuda,,,0
+oecd,Argentina,,,0
+oecd,Armenia,,,0
+oecd,Aruba (Netherlands),,,0
+oecd,Azerbaijan,,,0
+oecd,Bahamas,,,0
+oecd,Bahrain,,,0
+oecd,Bangladesh,,,0
+oecd,Barbados,,,0
+oecd,Belarus,,,0
+oecd,Belize,,,0
+oecd,Benin,,,0
+oecd,Bermuda (UK),,,0
+oecd,Bhutan,,,0
+oecd,Bolivia (Plurinational State of),,,0
+oecd,Bosnia and Herzegovina,,,0
+oecd,Botswana,,,0
+oecd,Brazil,,,0
+oecd,Brunei Darussalam,,,0
+oecd,Bulgaria,,,0
+oecd,Burkina Faso,,,0
+oecd,Burundi,,,0
+oecd,Cabo Verde,,,0
+oecd,Cambodia,,,0
+oecd,Cameroon,,,0
+oecd,Central African Republic,,,0
+oecd,Chad,,,0
+oecd,Chile,2010,,1
+oecd,China,,,0
+oecd,"China, Hong Kong SAR",,,0
+oecd,"China, Macao SAR",,,0
+oecd,Colombia,2020,,1
+oecd,Comoros,,,0
+oecd,Congo,,,0
+oecd,Cook Islands,,,0
+oecd,Croatia,,,0
+oecd,Cuba,,,0
+oecd,Cyprus,,,0
+oecd,Côte d'Ivoire,,,0
+oecd,Democratic Republic of the Congo,,,0
+oecd,Djibouti,,,0
+oecd,Dominica,,,0
+oecd,Dominican Republic,,,0
+oecd,Ecuador,,,0
+oecd,Egypt,,,0
+oecd,El Salvador,,,0
+oecd,Estonia,2010,,1
+oecd,Eswatini,,,0
+oecd,Ethiopia,,,0
+oecd,Fiji,,,0
+oecd,French Polynesia (France),,,0
+oecd,Gabon,,,0
+oecd,Gambia,,,0
+oecd,Georgia,,,0
+oecd,Ghana,,,0
+oecd,Gibraltar (UK),,,0
+oecd,Greenland (Denmark),,,0
+oecd,Grenada,,,0
+oecd,Guam (USA),,,0
+oecd,Guatemala,,,0
+oecd,Guernsey (UK),,,0
+oecd,Guinea,,,0
+oecd,Guinea-Bissau,,,0
+oecd,Guyana,,,0
+oecd,Haiti,,,0
+oecd,Honduras,,,0
+oecd,Hungary,1996,,1
+oecd,India,,,0
+oecd,Indonesia,,,0
+oecd,Iran (Islamic Republic of),,,0
+oecd,Iraq,,,0
+oecd,Jamaica,,,0
+oecd,Jersey  (UK),,,0
+oecd,Jordan,,,0
+oecd,Kazakhstan,,,0
+oecd,Kenya,,,0
+oecd,Kiribati,,,0
+oecd,Kuwait,,,0
+oecd,Kyrgyzstan,,,0
+oecd,Lao People's Democratic Republic,,,0
+oecd,Latvia,2016,,1
+oecd,Lebanon,,,0
+oecd,Lesotho,,,0
+oecd,Liberia,,,0
+oecd,Libya,,,0
+oecd,Liechtenstein,,,0
+oecd,Madagascar,,,0
+oecd,Madeira Islands (Portugal),,,0
+oecd,Malawi,,,0
+oecd,Malaysia,,,0
+oecd,Maldives,,,0
+oecd,Mali,,,0
+oecd,Malta,,,0
+oecd,Marshall Islands,,,0
+oecd,Mauritania,,,0
+oecd,Mauritius,,,0
+oecd,Micronesia (Federated States of),,,0
+oecd,Monaco,,,0
+oecd,Mongolia,,,0
+oecd,Montenegro,,,0
+oecd,Montserrat (UK),,,0
+oecd,Morocco,,,0
+oecd,Mozambique,,,0
+oecd,Myanmar,,,0
+oecd,Namibia,,,0
+oecd,Nauru,,,0
+oecd,Nepal,,,0
+oecd,New Caledonia (France),,,0
+oecd,Nicaragua,,,0
+oecd,Niger,,,0
+oecd,Nigeria,,,0
+oecd,North Macedonia,,,0
+oecd,Northern Mariana Islands (USA),,,0
+oecd,Oman,,,0
+oecd,Pakistan,,,0
+oecd,Palau,,,0
+oecd,Palestine,,,0
+oecd,Panama,,,0
+oecd,Papua New Guinea,,,0
+oecd,Paraguay,,,0
+oecd,Peru,,,0
+oecd,Philippines,,,0
+oecd,Puerto Rico (USA),,,0
+oecd,Qatar,,,0
+oecd,Republic of Moldova,,,0
+oecd,Romania,,,0
+oecd,Russian Federation,,,0
+oecd,Rwanda,,,0
+oecd,"Saint Helena, Ascension and Tristan da Cunha (UK)",,,0
+oecd,Saint Kitts and Nevis,,,0
+oecd,Saint Lucia,,,0
+oecd,Saint Vincent and the Grenadines,,,0
+oecd,Samoa,,,0
+oecd,San Marino,,,0
+oecd,Sao Tome and Principe,,,0
+oecd,Senegal,,,0
+oecd,Serbia,,,0
+oecd,Seychelles,,,0
+oecd,Sierra Leone,,,0
+oecd,Singapore,,,0
+oecd,Slovenia,2010,,1
+oecd,Solomon Islands,,,0
+oecd,Somalia,,,0
+oecd,South Africa,,,0
+oecd,Sri Lanka,,,0
+oecd,Sudan,,,0
+oecd,Suriname,,,0
+oecd,Syrian Arab Republic,,,0
+oecd,Taiwan Province of China,,,0
+oecd,Tajikistan,,,0
+oecd,Thailand,,,0
+oecd,Timor-Leste,,,0
+oecd,Togo,,,0
+oecd,Tonga,,,0
+oecd,Trinidad and Tobago,,,0
+oecd,Tunisia,,,0
+oecd,Turkmenistan,,,0
+oecd,Tuvalu,,,0
+oecd,Uganda,,,0
+oecd,Ukraine,,,0
+oecd,United Arab Emirates,,,0
+oecd,United Republic of Tanzania,,,0
+oecd,Uruguay,,,0
+oecd,Uzbekistan,,,0
+oecd,Vanuatu,,,0
+oecd,Venezuela (Bolivarian Republic of),,,0
+oecd,Viet Nam,,,0
+oecd,Yemen,,,0
+oecd,Zambia,,,0
+oecd,Zanzibar (United Republic of Tanzania),,,0
+oecd,Zimbabwe,,,0
