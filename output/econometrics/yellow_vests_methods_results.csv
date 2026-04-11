@@ -1,9 +1,0 @@
-frequency,donor_spec,method,att,se,ci95_lb,ci95_ub,chosen_lags,n_countries,n_controls,n_obs,rc,covariates
-annual,oecd,sdid,.0270535,.055252898,-.081240192,.13534719,10,20,19,160,0,lag1_sus lag2_sus lag3_sus lag4_sus lag5_sus lag6_sus lag7_sus lag8_sus lag9_sus lag10_sus policy_count
-annual,oecd,sc,-.0143587,.036175199,-.085260786,.056543387,10,20,19,160,0,
-annual,oecd_exclshock,sdid,.0486021,.049763002,-.048931587,.14613579,10,17,16,136,0,lag1_sus lag2_sus lag3_sus lag4_sus lag5_sus lag6_sus lag7_sus lag8_sus lag9_sus lag10_sus policy_count
-annual,oecd_exclshock,sc,.0275766,.027910599,-.027127171,.082280368,10,17,16,136,0,
-quarterly,oecd,sdid,.0350705,.039848,-.043030147,.11317115,12,36,35,864,0,lag1_sus lag2_sus lag3_sus lag4_sus lag5_sus lag6_sus lag7_sus lag8_sus lag9_sus lag10_sus lag11_sus lag12_sus policy_co
-quarterly,oecd,sc,.0384736,.067544803,-.093911774,.17085898,12,36,35,864,0,
-quarterly,oecd_exclshock,sdid,.0302037,.0432785,-.054620601,.115028,12,31,30,744,0,lag1_sus lag2_sus lag3_sus lag4_sus lag5_sus lag6_sus lag7_sus lag8_sus lag9_sus lag10_sus lag11_sus lag12_sus policy_co
-quarterly,oecd_exclshock,sc,.0349791,.0627257,-.087961011,.15791921,12,31,30,744,0,
