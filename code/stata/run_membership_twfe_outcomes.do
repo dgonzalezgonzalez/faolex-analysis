@@ -7,7 +7,8 @@ local out_dir "output/econometrics"
 local temp_dir "data/temp"
 local log_dir "`out_dir'/logs"
 
-local window 5
+local pre_window 5
+local post_window 10
 local min_side 4
 local min_control_obs 8
 
@@ -56,7 +57,7 @@ save `base_panel', replace
 * ------------------------------------------------------------
 tempname rs
 postfile `rs' str12 outcome str8 organization double beta se ci95_lb ci95_ub pretrend_pvalue ///
-    int n_countries n_treated n_controls N window min_side year_min year_max ///
+    int n_countries n_treated n_controls N pre_window post_window min_side year_min year_max ///
     using "`out_dir'/membership_twfe_outcomes_static_raw.dta", replace
 
 tempname es
@@ -155,12 +156,12 @@ foreach outcome in policy_count strategy_fs strategy_nut {
         gen rel_time = year - entry_year if ever_treated
 
         quietly summarize entry_year if ever_treated
-        local ymin = r(min) - `window'
-        local ymax = r(max) + `window'
+        local ymin = r(min) - `pre_window'
+        local ymax = r(max) + `post_window'
         keep if inrange(year, `ymin', `ymax')
 
-        by country_id: egen pre_obs = total(!missing(y) * inrange(rel_time, -`window', -1))
-        by country_id: egen post_obs = total(!missing(y) * inrange(rel_time, 0, `window'))
+        by country_id: egen pre_obs = total(!missing(y) * inrange(rel_time, -`pre_window', -1))
+        by country_id: egen post_obs = total(!missing(y) * inrange(rel_time, 0, `post_window'))
         by country_id: egen all_obs = total(!missing(y))
         keep if (ever_treated == 0 & all_obs >= `min_control_obs') | (ever_treated == 1 & pre_obs >= `min_side' & post_obs >= `min_side')
 
@@ -175,7 +176,7 @@ foreach outcome in policy_count strategy_fs strategy_nut {
 
         if (`n_t' == 0 | `n_n' < 2) {
             post `rs' ("`outcome'") ("`org'") (.) (.) (.) (.) (.) ///
-                (`n_c') (`n_t') (`n_n') (.) (`window') (`min_side') (`ymin') (`ymax')
+                (`n_c') (`n_t') (`n_n') (.) (`pre_window') (`post_window') (`min_side') (`ymin') (`ymax')
             continue
         }
 
@@ -195,20 +196,20 @@ foreach outcome in policy_count strategy_fs strategy_nut {
         scalar ub_hat = b_hat + invnormal(0.975)*se_hat
 
         * Event-study TWFE, baseline k=-1
-        forvalues k = 1/`window' {
+        forvalues k = 1/`pre_window' {
             capture drop evt_m`k'
             gen byte evt_m`k' = (ever_treated == 1 & rel_time == -`k')
         }
-        forvalues k = 0/`window' {
+        forvalues k = 0/`post_window' {
             capture drop evt_p`k'
             gen byte evt_p`k' = (ever_treated == 1 & rel_time == `k')
         }
 
         local rhs ""
-        forvalues k = `window'(-1)2 {
+        forvalues k = `pre_window'(-1)2 {
             local rhs `rhs' evt_m`k'
         }
-        forvalues k = 0/`window' {
+        forvalues k = 0/`post_window' {
             local rhs `rhs' evt_p`k'
         }
 
@@ -216,7 +217,7 @@ foreach outcome in policy_count strategy_fs strategy_nut {
         testparm evt_m*
         scalar p_pre = r(p)
 
-        forvalues k = `window'(-1)2 {
+        forvalues k = `pre_window'(-1)2 {
             local vv = "evt_m`k'"
             capture scalar bb = _b[`vv']
             if _rc scalar bb = .
@@ -230,7 +231,7 @@ foreach outcome in policy_count strategy_fs strategy_nut {
             }
             post `es' ("`outcome'") ("`org'") (-`k') (bb) (ss) (ll) (uu) ("pre")
         }
-        forvalues k = 0/`window' {
+        forvalues k = 0/`post_window' {
             local vv = "evt_p`k'"
             capture scalar bb = _b[`vv']
             if _rc scalar bb = .
@@ -248,7 +249,7 @@ foreach outcome in policy_count strategy_fs strategy_nut {
         quietly count if e(sample)
         local n_obs = r(N)
         post `rs' ("`outcome'") ("`org'") (b_hat) (se_hat) (lb_hat) (ub_hat) (p_pre) ///
-            (`n_c') (`n_t') (`n_n') (`n_obs') (`window') (`min_side') (`ymin') (`ymax')
+            (`n_c') (`n_t') (`n_n') (`n_obs') (`pre_window') (`post_window') (`min_side') (`ymin') (`ymax')
     }
 }
 
@@ -259,7 +260,7 @@ postclose `es'
 * Export static results
 * ------------------------------------------------------------
 use "`out_dir'/membership_twfe_outcomes_static_raw.dta", clear
-order outcome organization beta se ci95_lb ci95_ub pretrend_pvalue n_countries n_treated n_controls N window min_side year_min year_max
+order outcome organization beta se ci95_lb ci95_ub pretrend_pvalue n_countries n_treated n_controls N pre_window post_window min_side year_min year_max
 export delimited using "`out_dir'/membership_twfe_outcomes_static_results.csv", replace
 save "`out_dir'/membership_twfe_outcomes_static_results.dta", replace
 
