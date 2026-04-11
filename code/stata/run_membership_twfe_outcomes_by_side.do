@@ -196,8 +196,7 @@ foreach sidev in supply_side demand_side {
                 continue
             }
 
-            quietly xtset panel_id year
-            quietly xtreg y treated i.year if !missing(y), fe vce(cluster panel_id)
+            quietly reghdfe y treated if !missing(y), absorb(panel_id year) vce(cluster panel_id)
             scalar b_hat = _b[treated]
             scalar se_hat = _se[treated]
             if missing(se_hat) {
@@ -227,7 +226,7 @@ foreach sidev in supply_side demand_side {
                 local rhs `rhs' evt_p`k'
             }
 
-            quietly xtreg y `rhs' i.year if !missing(y), fe vce(cluster panel_id)
+            quietly reghdfe y `rhs' if !missing(y), absorb(panel_id year) vce(cluster panel_id)
             testparm evt_m*
             scalar p_pre = r(p)
 
@@ -245,6 +244,8 @@ foreach sidev in supply_side demand_side {
                 }
                 post `es' ("`outcome'") ("`sidev'") ("`org'") (-`k') (bb) (ss) (ll) (uu) ("pre")
             }
+            post `es' ("`outcome'") ("`sidev'") ("`org'") (-1) (0) (0) (0) (0) ("pre")
+
             forvalues k = 0/`post_window' {
                 local vv = "evt_p`k'"
                 capture scalar bb = _b[`vv']

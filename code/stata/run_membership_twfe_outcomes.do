@@ -181,9 +181,8 @@ foreach outcome in policy_count strategy_sus strategy_fs strategy_nut {
             continue
         }
 
-        * Static TWFE
-        quietly xtset country_id year
-        quietly xtreg y treated i.year if !missing(y), fe vce(cluster country_id)
+        * Static TWFE via reghdfe
+        quietly reghdfe y treated if !missing(y), absorb(country_id year) vce(cluster country_id)
         scalar b_hat = _b[treated]
         scalar se_hat = _se[treated]
         if missing(se_hat) {
@@ -214,7 +213,7 @@ foreach outcome in policy_count strategy_sus strategy_fs strategy_nut {
             local rhs `rhs' evt_p`k'
         }
 
-        quietly xtreg y `rhs' i.year if !missing(y), fe vce(cluster country_id)
+        quietly reghdfe y `rhs' if !missing(y), absorb(country_id year) vce(cluster country_id)
         testparm evt_m*
         scalar p_pre = r(p)
 
@@ -232,6 +231,9 @@ foreach outcome in policy_count strategy_sus strategy_fs strategy_nut {
             }
             post `es' ("`outcome'") ("`org'") (-`k') (bb) (ss) (ll) (uu) ("pre")
         }
+        * reference point t=-1
+        post `es' ("`outcome'") ("`org'") (-1) (0) (0) (0) (0) ("pre")
+
         forvalues k = 0/`post_window' {
             local vv = "evt_p`k'"
             capture scalar bb = _b[`vv']
