@@ -285,6 +285,7 @@ foreach oo of local outcomes {
                 (line beta rel_time, lcolor(navy) lwidth(medthick)) ///
                 , yline(0, lcolor(maroon) lpattern(dash)) ///
                   xline(-1, lcolor(gs8) lpattern(shortdash)) ///
+                  xlabel(-5(1)10) ///
                   xtitle("Relative year to entry (k)") ///
                   ytitle("TWFE coefficient") ///
                   title("`=upper("`org'")' entry: `oo' TWFE event-study") ///
