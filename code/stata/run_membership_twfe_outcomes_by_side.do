@@ -25,7 +25,7 @@ log using "`log_dir'/membership_twfe_outcomes_by_side.log", text replace
 import delimited "`input_csv'", varnames(1) encoding(utf8) clear
 capture confirm variable Category
 if _rc == 0 rename Category category
-keep country date_original category strategy_fs strategy_nut
+keep country date_original category strategy_sus strategy_fs strategy_nut
 keep if !missing(country) & !missing(date_original)
 drop if strpos(country, ";") > 0
 
@@ -43,7 +43,7 @@ keep if !missing(policy_date)
 gen year = yofd(policy_date)
 keep if inrange(year, 1950, 2025)
 
-collapse (mean) strategy_fs strategy_nut (count) policy_count = policy_date, by(country year side)
+collapse (mean) strategy_sus strategy_fs strategy_nut (count) policy_count = policy_date, by(country year side)
 gen byte raw_obs = 1
 
 egen country_id = group(country), label
@@ -55,9 +55,11 @@ replace raw_obs = 0 if missing(raw_obs)
 replace policy_count = 0 if missing(policy_count)
 bysort panel_id (year): replace strategy_fs = strategy_fs[_n-1] if missing(strategy_fs)
 bysort panel_id (year): replace strategy_nut = strategy_nut[_n-1] if missing(strategy_nut)
+bysort panel_id (year): replace strategy_sus = strategy_sus[_n-1] if missing(strategy_sus)
 gsort panel_id -year
 by panel_id: replace strategy_fs = strategy_fs[_n-1] if missing(strategy_fs)
 by panel_id: replace strategy_nut = strategy_nut[_n-1] if missing(strategy_nut)
+by panel_id: replace strategy_sus = strategy_sus[_n-1] if missing(strategy_sus)
 sort panel_id year
 
 tempfile base_panel
@@ -76,7 +78,7 @@ postfile `es' str12 outcome str12 side str8 organization int rel_time double bet
     using "`out_dir'/membership_twfe_outcomes_by_side_eventstudy_raw.dta", replace
 
 foreach sidev in supply_side demand_side {
-    foreach outcome in policy_count strategy_fs strategy_nut {
+    foreach outcome in policy_count strategy_sus strategy_fs strategy_nut {
         foreach org in oecd eu {
 
             use `base_panel', clear
@@ -160,6 +162,7 @@ foreach sidev in supply_side demand_side {
 
             gen y = .
             if "`outcome'" == "policy_count" replace y = policy_count
+            if "`outcome'" == "strategy_sus" replace y = strategy_sus
             if "`outcome'" == "strategy_fs" replace y = strategy_fs
             if "`outcome'" == "strategy_nut" replace y = strategy_nut
 

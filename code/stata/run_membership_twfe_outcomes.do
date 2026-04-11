@@ -22,7 +22,7 @@ log using "`log_dir'/membership_twfe_outcomes.log", text replace
 * Base annual panel
 * ------------------------------------------------------------
 import delimited "`input_csv'", varnames(1) encoding(utf8) clear
-keep country date_original strategy_fs strategy_nut
+keep country date_original strategy_sus strategy_fs strategy_nut
 keep if !missing(country) & !missing(date_original)
 drop if strpos(country, ";") > 0
 
@@ -37,7 +37,7 @@ keep if !missing(policy_date)
 gen year = yofd(policy_date)
 keep if inrange(year, 1950, 2025)
 
-collapse (mean) strategy_fs strategy_nut (count) policy_count = policy_date, by(country year)
+collapse (mean) strategy_sus strategy_fs strategy_nut (count) policy_count = policy_date, by(country year)
 gen byte raw_obs = 1
 
 egen country_id = group(country), label
@@ -64,7 +64,7 @@ tempname es
 postfile `es' str12 outcome str8 organization int rel_time double beta se ci95_lb ci95_ub str6 side ///
     using "`out_dir'/membership_twfe_outcomes_eventstudy_raw.dta", replace
 
-foreach outcome in policy_count strategy_fs strategy_nut {
+foreach outcome in policy_count strategy_sus strategy_fs strategy_nut {
     foreach org in oecd eu {
 
         use `base_panel', clear
@@ -147,6 +147,7 @@ foreach outcome in policy_count strategy_fs strategy_nut {
 
         gen y = .
         if "`outcome'" == "policy_count" replace y = policy_count
+        if "`outcome'" == "strategy_sus" replace y = strategy_sus
         if "`outcome'" == "strategy_fs" replace y = strategy_fs
         if "`outcome'" == "strategy_nut" replace y = strategy_nut
 
