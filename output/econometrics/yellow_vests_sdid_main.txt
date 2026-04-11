@@ -1,0 +1,7 @@
+metric,value
+att,0.058806
+se,0.061072
+ci95_lb,-0.060892
+ci95_ub,0.178505
+chosen_lags,12
+covariates,lag1_sus lag2_sus lag3_sus lag4_sus lag5_sus lag6_sus lag7_s
