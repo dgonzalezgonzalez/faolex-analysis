@@ -63,8 +63,11 @@ class DashboardBuilderTests(unittest.TestCase):
 
             html = output_path.read_text(encoding="utf-8")
             self.assertIn("FAOLEX Food Legislation Analysis", html)
-            self.assertIn("Environmental Sustainability", html)
-            self.assertIn("Demand Side", html)
+            self.assertIn('data-tab="filtering"', html)
+            self.assertIn('data-tab="policies"', html)
+            self.assertNotIn('data-tab="demand-side"', html)
+            self.assertNotIn('data-tab="supply-side"', html)
+            self.assertNotIn('data-tab="environmental-sustainability"', html)
             self.assertIn("Policy rankings", html)
             self.assertIn("Map Measure", html)
             self.assertIn("Descriptive statistics LaTeX", html)
